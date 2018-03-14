@@ -1,0 +1,9 @@
+{
+  "editor.tabSize": 2,
+  "editor.folding": false,
+  "eslint.autoFixOnSave": true,
+  "javascript.validate.enable": false,
+  "flow.useNPMPackagedFlow": true,
+  "flow.runOnEdit": true,
+  "explorer.autoReveal": false,
+}

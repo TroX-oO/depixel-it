@@ -1,0 +1,9 @@
+[ignore]
+.*/build/.*
+.*/node_modules/.*
+
+[libs]
+./flow-typed/npm/
+
+[options]
+module.use_strict=true
