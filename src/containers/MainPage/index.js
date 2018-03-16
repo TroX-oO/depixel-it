@@ -10,6 +10,8 @@ import styled from 'styled-components';
 import DropArea from '../DropArea';
 //$FlowFixMe
 import Worker from 'worker-loader!../../worker/ImageProcessor.js';
+import ProgressArea from '../ProgressArea';
+import Graph from '../../lib/Graph';
 
 /*
 ** Types
@@ -18,7 +20,12 @@ import Worker from 'worker-loader!../../worker/ImageProcessor.js';
 export type StateTypes = {
   imageData: any,
   progress: ?number,
-  processedImage: any
+  processedImage: any,
+  initialGraph: ?{
+    width: number,
+    height: number,
+    graph: Graph
+  }
 };
 
 /*
@@ -27,7 +34,7 @@ export type StateTypes = {
 
 const Page = styled.div`
   display: block;
-  width: 900px;
+  width: 1200px;
   text-align: center;
   margin: auto;
 `;
@@ -39,16 +46,30 @@ const PreviewDrop = styled.div`
   text-align: center;
   border: 1px solid gray;
   margin: 10px;
+  padding: 10px;
+`;
+
+const ProgressView = styled(ProgressArea)`
+  display: inline-block;
+  width: 700px;
+  height: 700px;
+  text-align: center;
+  border: 1px solid gray;
+  margin: 10px;
+  vertical-align: bottom;
+  padding: 10px;
 `;
 
 const ProcessedArea = styled.div`
   display: inline-block;
-  width: 400px;
-  height: 400px;
+  width: 1160px;
+  height: 1160px;
   text-align: center;
   border: 1px solid gray;
   margin: 10px;
   vertical-align: top;
+  padding: 10px;
+  box-sizing: border-box;
 `;
 
 const ProcessedSpriteImage = styled.div`
@@ -73,7 +94,8 @@ class MainPage extends React.Component<{}, StateTypes> {
   state = {
     imageData: null,
     progress: null,
-    processedImage: null
+    processedImage: null,
+    initialGraph: null
   };
 
   worker = new Worker();
@@ -93,13 +115,19 @@ class MainPage extends React.Component<{}, StateTypes> {
 
     if (canvas && imageData) {
       const ctx = canvas.getContext('2d');
+      const width = imageData.width;
+      const height = imageData.height;
 
-      canvas.width = imageData.width;
-      canvas.height = imageData.height;
-      ctx.drawImage(imageData, 0, 0, imageData.width, imageData.height);
-      const canvasData = ctx.getImageData(0, 0, imageData.width, imageData.height);
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(imageData, 0, 0, width, height);
+      const canvasData = ctx.getImageData(0, 0, width, height);
 
-      this.worker.postMessage(canvasData.data);
+      this.worker.postMessage({
+        width,
+        height,
+        data: canvasData.data
+      });
     } else {
       console.error(`Unable to retrieve context.`);
     }
@@ -107,6 +135,7 @@ class MainPage extends React.Component<{}, StateTypes> {
 
   onWorkerMessage = (e: any) => {
     const msg = e.data;
+    const { imageData } = this.state;
 
     if (msg) {
       switch (msg.type) {
@@ -118,7 +147,6 @@ class MainPage extends React.Component<{}, StateTypes> {
           break;
         case 'done':
           const canvas = this.canvas;
-          const { imageData } = this.state;
 
           if (canvas && imageData) {
             const ctx = canvas.getContext('2d');
@@ -135,6 +163,20 @@ class MainPage extends React.Component<{}, StateTypes> {
             }));
           }
           break;
+        case 'step':
+          const graphType = msg.data.type;
+
+          if (graphType === 'initial' && imageData) {
+            this.setState(prevState => ({
+              ...prevState,
+              initialGraph: {
+                width: imageData.width,
+                height: imageData.height,
+                graph: Graph.unserialize(msg.data.graph)
+              }
+            }));
+          }
+          break;
         default:
       }
     }
@@ -145,7 +187,7 @@ class MainPage extends React.Component<{}, StateTypes> {
   }
 
   render() {
-    const { imageData, progress, processedImage } = this.state;
+    const { imageData, progress, processedImage, initialGraph } = this.state;
 
     return (
       <Page>
@@ -155,6 +197,7 @@ class MainPage extends React.Component<{}, StateTypes> {
             Process
           </button>
         </PreviewDrop>
+        <ProgressView progress={progress} initialGraph={initialGraph} />
         <ProcessedArea>
           <Canvas innerRef={e => (this.canvas = e)} />
           {progress !== null ? <Line percent={progress} strokeWidth="4" /> : null}
