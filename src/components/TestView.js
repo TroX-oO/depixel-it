@@ -28,22 +28,19 @@ const Area = styled.svg`
 ** Component
 */
 const point = (x, y) => ({ x, y });
-const lines2 = [
-  [{ x: 1, y: 0 }, { x: 2, y: 2 }, { x: 3, y: 3 }, { x: 4, y: 4 }],
-  [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }, { x: 4, y: 4 }],
-  [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 3 }, { x: 4, y: 4 }]
-];
-const lines = [point(1, 1), point(1, 0), point(1, 2)] || lines2;
+
+const lines = [point(1, 1), point(2, 5), point(4, 2), point(4, 4), point(2, 7), point(4, 7)];
+
 console.log(lines);
-const ContainerWidth = 650;
-const ContainerHeight = 650;
+const ContainerWidth = 200;
+const ContainerHeight = 200;
 const x = scaleLinear()
-  .domain([0, 4])
+  .domain([0, 8])
   .range([0, ContainerWidth]);
 
 const y = scaleLinear()
-  .domain([0, 4])
-  .range([ContainerHeight, 0]);
+  .domain([0, 8])
+  .range([0, ContainerHeight]);
 
 class TestView extends React.Component<{}, null> {
   renderVoronoi() {

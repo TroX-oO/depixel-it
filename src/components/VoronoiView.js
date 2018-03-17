@@ -38,14 +38,18 @@ const Area = styled.svg`
 /*
 ** Component
 */
-const lines = [
-  [{ x: 1, y: 3 }, { x: 2, y: 5 }, { x: 3, y: 15 }, { x: 4, y: 12 }],
-  [{ x: 1, y: 10 }, { x: 2, y: 4 }, { x: 3, y: 2 }, { x: 4, y: 15 }],
-  [{ x: 1, y: 7 }, { x: 2, y: 11 }, { x: 3, y: 9 }, { x: 4, y: 2 }]
-].map((p, i) => p.map(d => ({ ...d, line: i })));
 
 const ContainerWidth = 400;
 const ContainerHeight = 400;
+
+function getPoints(graph) {
+  const { nodes } = graph;
+  const result = [];
+
+  for (let i = 0; i < nodes.length; ++i) {}
+
+  return result;
+}
 
 class VoronoiView extends React.Component<PropTypes, null> {
   shouldComponentUpdate(nextProps: PropTypes) {
@@ -62,12 +66,12 @@ class VoronoiView extends React.Component<PropTypes, null> {
 
       const y = scaleLinear()
         .domain([0, height])
-        .range([ContainerHeight, 0]);
+        .range([0, ContainerHeight]);
 
       return (
         <Voronoi
           extent={[[0, 0], [ContainerWidth, ContainerHeight]]}
-          nodes={lines.reduce((acc, d) => [...acc, ...d], [])}
+          nodes={getPoints(graph)}
           polygonStyle={{ stroke: 'rgba(0, 0, 0, .7)' }}
           x={d => x(d.x)}
           y={d => y(d.y)}
