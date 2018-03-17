@@ -1,8 +1,8 @@
 //@flow
 
 /*
-** Imports
-*/
+ ** Imports
+ */
 
 import React from 'react';
 import { Motion } from 'react-motion';
@@ -10,8 +10,8 @@ import styled, { css } from 'styled-components';
 import Graph from '../lib/Graph';
 
 /*
-** Types
-*/
+ ** Types
+ */
 
 type PropTypes = {
   width: number,
@@ -20,8 +20,8 @@ type PropTypes = {
 };
 
 /*
-** Styled
-*/
+ ** Styled
+ */
 
 const Area = styled.div`
   position: relative;
@@ -47,6 +47,14 @@ const Grid = styled.table`
 const Row = styled.tr``;
 const Cell = styled.td`
   border: 1px solid black;
+  ${props => {
+    if (props.rgb) {
+      const { r, g, b } = props.rgb;
+      return css`
+        background-color: rgba(${r}, ${g}, ${b}, 0.5);
+      `;
+    }
+  }};
 `;
 
 const Node = styled.div`
@@ -70,12 +78,12 @@ const Edge = styled.div`
   top: 0;
   left: 0;
   height: 2px;
-  width: 35px;
   background-color: black;
   ${props => {
     let tx = 0;
     let ty = 4;
     let rotate = 0;
+    let w = 35;
 
     if (props.dir === 'up') {
       rotate = 90;
@@ -89,10 +97,33 @@ const Edge = styled.div`
       tx -= 30;
     } else if (props.dir === 'right') {
       tx += 10;
+    } else if (props.dir === 'upright') {
+      rotate = -45;
+      tx = -5;
+      ty = -11;
+      w = 50;
+    } else if (props.dir === 'upleft') {
+      rotate = 45;
+      tx = -36;
+      ty = -14;
+      w = 50;
+    } else if (props.dir === 'downleft') {
+      rotate = -45;
+      tx = -36;
+      ty = 20;
+      w = 50;
+    } else if (props.dir === 'downright') {
+      rotate = 45;
+      tx = 0;
+      ty = 22;
+      w = 50;
     }
     const tr = `translate3d(${tx}px, ${ty}px, 0)`;
 
-    return `transform: ${tr}${rotate ? ` rotateZ(${rotate}deg)` : ''};`;
+    return `
+      transform: ${tr}${rotate ? ` rotateZ(${rotate}deg)` : ''};
+      width: ${w}px;
+    `;
   }};
 `;
 /*
@@ -113,8 +144,8 @@ class GraphView extends React.Component<PropTypes, null> {
     if (n) {
       return (
         <Node tx={style.translateX} ty={style.translateY}>
-          {n.map(edge => {
-            return <Edge key={`edge-${edge.nodeId}`} dir={edge.dir} />;
+          {n.edges.map(edge => {
+            return <Edge key={`edge-${idx}-${edge.nodeId}`} dir={edge.dir} />;
           })}
         </Node>
       );
@@ -127,7 +158,6 @@ class GraphView extends React.Component<PropTypes, null> {
     const { graph, width, height } = this.props;
 
     if (graph) {
-      console.log(graph);
       const { nodes } = graph;
       const jsx = [];
       let row = null;
@@ -177,6 +207,7 @@ class GraphView extends React.Component<PropTypes, null> {
 
       for (let i = 0; i < nodes.length; ++i) {
         const j = i % width;
+        const node = nodes[i];
 
         if (j === 0) {
           if (row) {
@@ -184,7 +215,7 @@ class GraphView extends React.Component<PropTypes, null> {
           }
           row = [];
         }
-        const n = <Cell key={`node-${i}`} />;
+        const n = <Cell key={`node-${i}`} rgb={node.rgb} id={`${'' + i}`} />;
 
         if (row) {
           row.push(n);

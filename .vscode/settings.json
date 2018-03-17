@@ -6,4 +6,5 @@
   "flow.useNPMPackagedFlow": true,
   "flow.runOnEdit": true,
   "explorer.autoReveal": false,
+  "editor.formatOnSave": true
 }
