@@ -12,6 +12,8 @@ import DropArea from '../DropArea';
 import Worker from 'worker-loader!../../worker/ImageProcessor.js';
 import ProgressArea from '../ProgressArea';
 import Graph from '../../lib/Graph';
+import VoronoiView from '../../components/VoronoiView';
+import TestView from '../../components/TestView';
 
 /*
 ** Types
@@ -191,6 +193,7 @@ class MainPage extends React.Component<{}, StateTypes> {
 
     return (
       <Page>
+        <TestView />
         <PreviewDrop>
           <DropArea onImageLoaded={this.onImageLoaded} />
           <button disabled={!imageData} onClick={this.processImage}>
@@ -198,6 +201,7 @@ class MainPage extends React.Component<{}, StateTypes> {
           </button>
         </PreviewDrop>
         <ProgressView progress={progress} initialGraph={initialGraph} />
+        <VoronoiView {...initialGraph} />
         <ProcessedArea>
           <Canvas innerRef={e => (this.canvas = e)} />
           {progress !== null ? <Line percent={progress} strokeWidth="4" /> : null}
