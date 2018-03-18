@@ -14,6 +14,7 @@ let Id = 0;
 export default class Graph {
   nodes: Array<{
     edges: Array<Object>,
+    corners: Array<Object>,
     rgb: ?Object
   }>;
   id: number;
@@ -23,7 +24,7 @@ export default class Graph {
     this.nodes = new Array(size);
 
     for (let i = 0; i < this.nodes.length; ++i) {
-      this.nodes[i] = { edges: [], rgb: null };
+      this.nodes[i] = { edges: [], rgb: null, corners: [] };
     }
   }
 

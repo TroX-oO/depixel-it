@@ -42,6 +42,11 @@ function createSimilarityGraph(data, width, height) {
 
       // We set node color
       g.nodes[current].rgb = rgb;
+      // We set corners
+      g.nodes[current].corners.push({ x: i, y: j });
+      g.nodes[current].corners.push({ x: i + 1, y: j + 1 });
+      g.nodes[current].corners.push({ x: i + 1, y: j });
+      g.nodes[current].corners.push({ x: i, y: j + 1 });
 
       // Adding edges to horizontal/vertical neighbours
       if (i < width - 1) {
@@ -359,6 +364,25 @@ function removeDiagonals(graph, width, height) {
   }
 }
 
+function reshape(graph, width, height) {
+  const gr = new Graph((width + 1) * (height + 1));
+  const { nodes } = graph;
+
+  for (let i = 0; i < nodes.length; ++i) {
+    const { edges, rgb: { r, g, b } } = nodes[i];
+
+    gr.nodes[i].rgb = { r, g, b };
+    // let x = i % width + 0.5;
+    // let y = Math.floor(i / width) + 0.5;
+
+    if (edges.length === 2) {
+      for (let j = 0; j < edges.length; ++j) {}
+    }
+  }
+
+  return gr;
+}
+
 function processImage(binaryData, width, height) {
   console.log(binaryData.length);
   const graph = createSimilarityGraph(binaryData, width, height);
@@ -388,6 +412,16 @@ function processImage(binaryData, width, height) {
     data: {
       type: 'initial',
       graph: graph.serialize()
+    }
+  });
+
+  const reshapedGraph = reshape(graph, width, height);
+
+  post({
+    type: 'step',
+    data: {
+      type: 'initial',
+      graph: reshapedGraph.serialize()
     }
   });
 
