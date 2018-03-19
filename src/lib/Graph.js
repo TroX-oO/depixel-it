@@ -14,8 +14,9 @@ let Id = 0;
 export default class Graph {
   nodes: Array<{
     edges: Array<Object>,
-    corners: Array<Object>,
-    rgb: ?Object
+    rgb: ?Object,
+    x: number,
+    y: number
   }>;
   id: number;
 
@@ -24,8 +25,48 @@ export default class Graph {
     this.nodes = new Array(size);
 
     for (let i = 0; i < this.nodes.length; ++i) {
-      this.nodes[i] = { edges: [], rgb: null, corners: [] };
+      this.nodes[i] = { id: i, edges: [], rgb: null, x: -1, y: -1 };
     }
+  }
+
+  makeGrid(width: number, height: number) {
+    const { nodes } = this;
+
+    for (let i = 0; i < nodes.length; ++i) {
+      const x = i % (width + 1);
+      const y = Math.floor(i / (width + 1));
+
+      console.log(`${x}${y}`);
+      if (x < width) {
+        console.log(` -> adding right`);
+        this.addEdge(i, i + 1, 'right');
+      }
+      if (y < height) {
+        console.log(` -> adding down`);
+        this.addEdge(i, i + (width + 1), 'down');
+      }
+    }
+  }
+
+  addNode(x: number, y: number) {
+    let n = this.findNode(x, y);
+
+    if (!n) {
+      n = { id: this.nodes.length, edges: [], rgb: null, x, y };
+
+      this.nodes.push(n);
+    }
+    return n;
+  }
+
+  findNode(x: number, y: number) {
+    for (let i = 0; i < this.nodes.length; ++i) {
+      if (this.nodes[i].x === x && this.nodes[i].y === y) {
+        return this.nodes[i];
+      }
+    }
+
+    return null;
   }
 
   addEdge(fromId: number, toId: number, dir: string, data: any) {
@@ -52,7 +93,6 @@ export default class Graph {
       const idx = findEdge(this.nodes[fromId].edges, toId);
 
       if (idx !== -1) {
-        console.log('found !');
         this.nodes[fromId].edges.splice(idx, 1);
       }
     }
@@ -61,14 +101,13 @@ export default class Graph {
       const idx = findEdge(this.nodes[toId].edges, fromId);
 
       if (idx !== -1) {
-        console.log('found !');
         this.nodes[toId].edges.splice(idx, 1);
       }
     }
   }
 
   hasEdge(fromId: number, toId: number) {
-    console.log(`hasEdge from ${fromId} to ${toId} ? ${(findEdge(this.nodes[fromId].edges, toId) !== -1).toString()}`);
+    // console.log(`hasEdge from ${fromId} to ${toId} ? ${(findEdge(this.nodes[fromId].edges, toId) !== -1).toString()}`);
     return findEdge(this.nodes[fromId].edges, toId) !== -1;
   }
 
