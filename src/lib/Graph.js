@@ -36,6 +36,9 @@ export default class Graph {
       const x = i % (width + 1);
       const y = Math.floor(i / (width + 1));
 
+      nodes[i].x = x;
+      nodes[i].y = y;
+
       console.log(`${x}${y}`);
       if (x < width) {
         console.log(` -> adding right`);
