@@ -29,7 +29,7 @@ function colorDistance(scale, dest, src) {
 }
 
 function createSimilarityGraph(data, width, height) {
-  const g = new Graph(width * height);
+  const g = new Graph(width * height, width, height);
 
   for (let j = 0; j < height; j++) {
     for (let i = 0; i < width; i++) {
@@ -42,66 +42,44 @@ function createSimilarityGraph(data, width, height) {
 
       // We set node color
       g.nodes[current].rgb = rgb;
+      g.nodes[current].x = i;
+      g.nodes[current].y = j;
 
       // Adding edges to horizontal/vertical neighbours
       if (i < width - 1) {
         // Right
-        g.addEdge(current, current + 1, 'right', {
-          from: [i, j],
-          to: [i + 1, j]
-        });
+        g.addEdge(current, current + 1, 'right');
 
         if (j > 0) {
           // Up Right
-          g.addEdge(current, current - width + 1, 'upright', {
-            from: [i, j],
-            to: [i + 1, j - 1]
-          });
+          g.addEdge(current, current - width + 1, 'upright');
         }
         if (j < height - 1) {
           // Down Right
-          g.addEdge(current, current + width + 1, 'downright', {
-            from: [i, j],
-            to: [i + 1, j + 1]
-          });
+          g.addEdge(current, current + width + 1, 'downright');
         }
       }
       if (i > 0) {
         // Left
-        g.addEdge(current, current - 1, 'left', {
-          from: [i, j],
-          to: [i - 1, j]
-        });
+        g.addEdge(current, current - 1, 'left');
 
         if (j > 0) {
           // Up Right
-          g.addEdge(current, current - width - 1, 'upleft', {
-            from: [i, j],
-            to: [i - 1, j - 1]
-          });
+          g.addEdge(current, current - width - 1, 'upleft');
         }
         if (j < height - 1) {
           // Down Left
-          g.addEdge(current, current + width - 1, 'downleft', {
-            from: [i, j],
-            to: [i - 1, j + 1]
-          });
+          g.addEdge(current, current + width - 1, 'downleft');
         }
       }
 
       if (j < height - 1) {
         // Down
-        g.addEdge(current, current + width, 'down', {
-          from: [i, j],
-          to: [i, j + 1]
-        });
+        g.addEdge(current, current + width, 'down');
       }
       if (j > 0) {
         // Up
-        g.addEdge(current, current - width, 'up', {
-          from: [i, j],
-          to: [i, j - 1]
-        });
+        g.addEdge(current, current - width, 'up');
       }
       onProgress(Math.floor(current / (height * width) * 100));
     }
@@ -133,7 +111,6 @@ function removeDissimilarConnectedPixels(graph) {
       const dest = nodes[edges[j].nodeId];
       const yuv2 = toYUV(dest.rgb);
 
-      console.log(yuv2);
       if (
         Math.abs(yuv1.y - yuv2.y) > 48 / 255 ||
         Math.abs(yuv1.u - yuv2.u) > 7 / 255 ||
@@ -178,53 +155,53 @@ function computeCurveHeuristic(graph, fromId, toId, width) {
   return curve.length;
 }
 
-function neighbours(nodeId, width, height) {
-  const result = [];
-  const i = nodeId % width;
-  const j = Math.floor(nodeId / width);
+// function neighbours(nodeId, width, height) {
+//   const result = [];
+//   const i = nodeId % width;
+//   const j = Math.floor(nodeId / width);
 
-  if (i > 0) {
-    result.push(i - 1);
+//   if (i > 0) {
+//     result.push(i - 1);
 
-    if (j > 0) {
-      result.push(i - 1 - width);
-    }
+//     if (j > 0) {
+//       result.push(i - 1 - width);
+//     }
 
-    if (j < height - 1) {
-      result.push(i - 1 + width);
-    }
-  }
+//     if (j < height - 1) {
+//       result.push(i - 1 + width);
+//     }
+//   }
 
-  if (i < width - 1) {
-    result.push(i + 1);
+//   if (i < width - 1) {
+//     result.push(i + 1);
 
-    if (j > 0) {
-      result.push(i + 1 - width);
-    }
+//     if (j > 0) {
+//       result.push(i + 1 - width);
+//     }
 
-    if (j < height - 1) {
-      result.push(i + 1 + width);
-    }
-  }
+//     if (j < height - 1) {
+//       result.push(i + 1 + width);
+//     }
+//   }
 
-  if (j > 0) {
-    result.push(i - width);
-  }
+//   if (j > 0) {
+//     result.push(i - width);
+//   }
 
-  if (j < height - 1) {
-    result.push(i + width);
-  }
-  return result;
-}
+//   if (j < height - 1) {
+//     result.push(i + width);
+//   }
+//   return result;
+// }
 
 function getbounds(fromId, toId, width, height) {
   const FrameSize = 8;
-  const i1 = fromId % width;
-  const j1 = Math.floor(fromId / width);
-  const i2 = fromId % width;
-  const j2 = Math.floor(fromId / width);
-  const xMin = FrameSize / 2 - 1 - Math.min(i1, i2);
-  const yMin = FrameSize / 2 - 1 - Math.min(j1, j2);
+  const x1 = fromId % width;
+  const y1 = Math.floor(fromId / width);
+  const x2 = toId % width;
+  const y2 = Math.floor(toId / width);
+  const xMin = -FrameSize / 2 - 1 + Math.min(x1, x2);
+  const yMin = -FrameSize / 2 - 1 + Math.min(y1, y2);
 
   return {
     xMin,
@@ -234,17 +211,15 @@ function getbounds(fromId, toId, width, height) {
   };
 }
 
-function inbounds(bounds, nodeId, width, height) {
+function inbounds(bounds, x, y) {
   const { xMin, yMin, xMax, yMax } = bounds;
-  const i = nodeId % width;
-  const j = Math.floor(nodeId / width);
 
-  return i >= xMin && i <= xMax && j >= yMin && j <= yMax;
+  return x >= xMin && x <= xMax && y >= yMin && y <= yMax;
 }
 
 function computeSparseHeuristic(graph, fromId, toId, width, height) {
   const stack = [];
-  const component = [`${fromId}-${toId}`];
+  const component = [fromId, toId];
   const bounds = getbounds(fromId, toId, width, height);
 
   stack.push(fromId);
@@ -252,17 +227,17 @@ function computeSparseHeuristic(graph, fromId, toId, width, height) {
 
   while (stack.length) {
     const nodeId = stack.pop();
-
-    const neigh = neighbours(nodeId, width, height);
+    const neigh = graph.nodes[nodeId].edges;
 
     for (let i = 0; i < neigh.length; ++i) {
-      const neighId = neigh[i];
+      const neighId = neigh[i].nodeId;
 
-      if (component.indexOf(`${nodeId}-${neighId}`) === -1 && component.indexOf(`${neighId}-${nodeId}`) === -1) {
+      if (component.indexOf(neighId) === -1) {
         // If the node is within the 8x8 bounds
-        if (inbounds(bounds, neighId, width, height)) {
+        const node = graph.nodes[neighId];
+        if (inbounds(bounds, node.x, node.y)) {
           // We add it to the stack
-          component.push(`${nodeId}-${neighId}`);
+          component.push(neighId);
           stack.push(neighId);
         }
       }
@@ -282,12 +257,17 @@ function computeIslandHeuristic(graph, fromId, toId, width) {
 
 function computeWeight(graph, fromId, toId, width, height) {
   let result = 0;
-  console.error('copmuting heuristic ' + fromId + '-' + toId);
-  result += computeCurveHeuristic(graph, fromId, toId, width);
-  result += computeSparseHeuristic(graph, fromId, toId, width, height);
-  result += computeIslandHeuristic(graph, fromId, toId, width);
 
-  console.log('result: ' + result);
+  result += computeCurveHeuristic(graph, fromId, toId, width);
+  console.error(`computeCurveHeuristic ${fromId} ${toId}`);
+  console.log(computeCurveHeuristic(graph, fromId, toId, width));
+  result += computeSparseHeuristic(graph, fromId, toId, width, height);
+  console.error(`computeSparseHeuristic ${fromId} ${toId}`);
+  console.log(computeSparseHeuristic(graph, fromId, toId, width, height));
+  result += computeIslandHeuristic(graph, fromId, toId, width);
+  console.error(`computeIslandHeuristic ${fromId} ${toId}`);
+  console.log(computeIslandHeuristic(graph, fromId, toId, width));
+
   return result;
 }
 
@@ -316,8 +296,6 @@ function removeDiagonals(graph, width, height) {
   const { nodes } = graph;
 
   for (let i = 0; i < nodes.length; ++i) {
-    console.log(`check diagonal ${i}`);
-    console.log(JSON.stringify(nodes[i]));
     // We check if the 2x2 block is fully connected
     // Checking from current to the right/down/downright
     // Checking from current + 1 to down/downleft
@@ -331,7 +309,6 @@ function removeDiagonals(graph, width, height) {
       graph.hasEdge(i + width, i + width + 1)
     ) {
       // We remove diagonales
-      console.log(`removing diagonals origin ${i}`);
       graph.removeEdge(i, i + width + 1);
       graph.removeEdge(i + 1, i + width);
     } else if (
@@ -343,8 +320,6 @@ function removeDiagonals(graph, width, height) {
       !graph.hasEdge(i + width, i + width + 1)
     ) {
       // Diagonals only, we need to resolve ambiguous meaning
-      console.log(graph.nodes[i]);
-      console.log(graph.nodes[i + 1]);
       const diag = mostWeightDiagonals(graph, i, width, height);
 
       if (diag) {
@@ -358,9 +333,96 @@ function removeDiagonals(graph, width, height) {
     }
   }
 }
+const invert = dir => {
+  if (dir === 'up') return 'down';
+  if (dir === 'down') return 'up';
+  if (dir === 'left') return 'right';
+  if (dir === 'right') return 'left';
+  if (dir === 'upright') return 'downleft';
+  if (dir === 'upleft') return 'downright';
+  if (dir === 'downleft') return 'upright';
+  if (dir === 'downright') return 'upleft';
+};
+function reshape(graph, width, height) {
+  const gr = new Graph((width + 1) * (height + 1), width + 1, height + 1);
+  const { nodes } = graph;
+
+  gr.makeGrid(width, height);
+
+  for (let i = 0; i < nodes.length; ++i) {
+    const { edges, x, y, rgb } = nodes[i];
+
+    // we don't process corners
+    if (
+      (x === 0 && y === 0) ||
+      (x === 0 && y === height - 1) ||
+      (x === width - 1 && y === 0) ||
+      (x === width - 1 && y === height - 1)
+    ) {
+      continue;
+    }
+
+    for (let j = 0; j < edges.length; ++j) {
+      const edge = edges[j];
+      const to = nodes[edge.nodeId];
+
+      // We check only diagonals
+      if (x === to.x || y === to.y) {
+        continue;
+      }
+
+      const px_x = Math.max(to.x, x);
+      const px_y = Math.max(to.y, y);
+      const offsetX = to.x - x;
+      const offsetY = to.y - y;
+
+      // Adj node = to.x, y
+      if (!(rgb && to.rgb && rgb.r === to.rgb.r && rgb.g === to.rgb.g && rgb.b === to.rgb.b)) {
+        const pnx = [px_x, px_y - offsetY];
+        const mpn = [px_x, px_y - 0.5 * offsetY];
+        const npn = [px_x + 0.25 * offsetX, px_y - 0.25 * offsetY];
+      }
+
+      //
+      // const offsetX = Math.abs(to.x - x);
+      // const offsetY = Math.abs(to.y - y);
+
+      // const h1 = gr.addNode(xHalf, yHalf);
+
+      // let dir = '';
+      // if (y < to.y) {
+      //   dir += 'down';
+      // } else if (y > to.y) {
+      //   dir += 'up';
+      // }
+
+      // if (x < to.x) {
+      //   dir += 'right';
+      // }
+      // if (x > to.x) {
+      //   dir += 'left';
+      // }
+
+      // const n1 = gr.findNode(x, y);
+      // const n2 = gr.findNode(to.x, to.y);
+
+      // gr.addEdge(n1.id, h1.id, dir);
+      // gr.addEdge(h1.id, n2.id, invert(dir));
+    }
+  }
+
+  // We optimize the graph by removing 2-valences nodes
+  // for (let i = 0; i < gr.nodes.length; ++i) {
+  //   const { edges, x, y } = gr.nodes[i];
+
+  //   if (edges.length === 2) {
+  //     const midX =
+  //   }
+
+  return gr;
+}
 
 function processImage(binaryData, width, height) {
-  console.log(binaryData.length);
   const graph = createSimilarityGraph(binaryData, width, height);
 
   post({
@@ -371,7 +433,7 @@ function processImage(binaryData, width, height) {
     }
   });
 
-  removeDissimilarConnectedPixels(graph, width, height);
+  removeDissimilarConnectedPixels(graph);
 
   post({
     type: 'step',
@@ -388,6 +450,16 @@ function processImage(binaryData, width, height) {
     data: {
       type: 'initial',
       graph: graph.serialize()
+    }
+  });
+
+  const reshapedGraph = reshape(graph, width, height);
+
+  post({
+    type: 'step',
+    data: {
+      type: 'reshaped',
+      graph: reshapedGraph.serialize()
     }
   });
 

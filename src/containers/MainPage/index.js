@@ -10,8 +10,10 @@ import styled from 'styled-components';
 import DropArea from '../DropArea';
 //$FlowFixMe
 import Worker from 'worker-loader!../../worker/ImageProcessor.js';
-import ProgressArea from '../ProgressArea';
+// import ProgressArea from '../ProgressArea';
 import Graph from '../../lib/Graph';
+import LatticeGraphView from '../../components/LatticeGraphView';
+import StepView from '../StepView';
 
 /*
 ** Types
@@ -21,7 +23,20 @@ export type StateTypes = {
   imageData: any,
   progress: ?number,
   processedImage: any,
+  steps: Array<{
+    type: string,
+    g: {
+      width: number,
+      height: number,
+      graph: Graph
+    }
+  }>,
   initialGraph: ?{
+    width: number,
+    height: number,
+    graph: Graph
+  },
+  reshapedGraph: ?{
     width: number,
     height: number,
     graph: Graph
@@ -49,7 +64,18 @@ const PreviewDrop = styled.div`
   padding: 10px;
 `;
 
-const ProgressView = styled(ProgressArea)`
+// const ProgressView = styled(ProgressArea)`
+//   display: inline-block;
+//   width: 700px;
+//   height: 700px;
+//   text-align: center;
+//   border: 1px solid gray;
+//   margin: 10px;
+//   vertical-align: bottom;
+//   padding: 10px;
+// `;
+
+const StepViewWrapper = styled(StepView)`
   display: inline-block;
   width: 700px;
   height: 700px;
@@ -95,7 +121,9 @@ class MainPage extends React.Component<{}, StateTypes> {
     imageData: null,
     progress: null,
     processedImage: null,
-    initialGraph: null
+    steps: [],
+    initialGraph: null,
+    reshapedGraph: null
   };
 
   worker = new Worker();
@@ -105,6 +133,7 @@ class MainPage extends React.Component<{}, StateTypes> {
     this.setState(prevState => ({
       ...prevState,
       imageData: image,
+      steps: [],
       progress: null
     }));
   };
@@ -167,13 +196,26 @@ class MainPage extends React.Component<{}, StateTypes> {
           const graphType = msg.data.type;
 
           if (graphType === 'initial' && imageData) {
+            const g = {
+              width: imageData.width,
+              height: imageData.height,
+              graph: Graph.unserialize(msg.data.graph)
+            };
             this.setState(prevState => ({
               ...prevState,
-              initialGraph: {
-                width: imageData.width,
-                height: imageData.height,
-                graph: Graph.unserialize(msg.data.graph)
-              }
+              steps: [...prevState.steps, { type: graphType, g: g }],
+              initialGraph: g
+            }));
+          } else if (graphType === 'reshaped' && imageData) {
+            const g = {
+              width: imageData.width,
+              height: imageData.height,
+              graph: Graph.unserialize(msg.data.graph)
+            };
+            this.setState(prevState => ({
+              ...prevState,
+              steps: [...prevState.steps, { type: graphType, g: g }],
+              reshapedGraph: g
             }));
           }
           break;
@@ -187,7 +229,7 @@ class MainPage extends React.Component<{}, StateTypes> {
   }
 
   render() {
-    const { imageData, progress, processedImage, initialGraph } = this.state;
+    const { imageData, progress, processedImage, reshapedGraph, steps } = this.state;
 
     return (
       <Page>
@@ -196,8 +238,10 @@ class MainPage extends React.Component<{}, StateTypes> {
           <button disabled={!imageData} onClick={this.processImage}>
             Process
           </button>
+          <Line percent={progress} />
         </PreviewDrop>
-        <ProgressView progress={progress} initialGraph={initialGraph} />
+        <StepViewWrapper steps={steps} />
+        <LatticeGraphView {...reshapedGraph} />
         <ProcessedArea>
           <Canvas innerRef={e => (this.canvas = e)} />
           {progress !== null ? <Line percent={progress} strokeWidth="4" /> : null}
