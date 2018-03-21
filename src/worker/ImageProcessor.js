@@ -336,33 +336,27 @@ function removeDiagonals(graph, width, height) {
 
 function reshape(graph, width, height) {
   const gr = new Graph((width + 1) * (height + 1));
+  // const gr = new Graph(width * height);
   const { nodes } = graph;
 
-  gr.makeGrid(width, height);
+  gr.makeGrid(width - 1, height - 1);
 
   for (let i = 0; i < nodes.length; ++i) {
     const { edges, rgb: { r, g, b }, x, y } = nodes[i];
 
-    // gr.nodes[i].rgb = { r, g, b };
-    // gr.nodes[i].x = x;
-    // gr.nodes[i].y = y;
-
-    // we don't process corners
-    // if (
-    //   (x === 0 && y === 0) ||
-    //   (x === 0 && y === height - 1) ||
-    //   (x === width - 1 && y === 0) ||
-    //   (x === width - 1 && y === height - 1)
-    // ) {
-    //   continue;
-    // }
+    //   // we don't process corners
+    //   // if (
+    //   //   (x === 0 && y === 0) ||
+    //   //   (x === 0 && y === height - 1) ||
+    //   //   (x === width - 1 && y === 0) ||
+    //   //   (x === width - 1 && y === height - 1)
+    //   // ) {
+    //   //   continue;
+    //   // }
 
     for (let j = 0; j < edges.length; ++j) {
       const edge = edges[j];
       const to = nodes[edge.nodeId];
-
-      if (x) {
-      }
 
       // We cut the edge in two halves
       // - We add 2 nodes to the graph (to add the 2 new edges)
@@ -374,14 +368,27 @@ function reshape(graph, width, height) {
       console.log(`creating 2 segments between ${x},${y}  and ${to.x},${to.y}`);
 
       const h1 = gr.addNode(xHalf, yHalf);
-      const h2 = gr.addNode(xHalf, yHalf);
+      // const h2 = gr.addNode(xHalf, yHalf);
       console.log(`creating 2 nodes at ${xHalf},${yHalf}`);
 
-      h1.rgb = to.rgb;
-      h2.rgb = { r, g, b };
+      h1.rgb = { r, g, b };
+      // h2.rgb = { r, g, b };
+      let dir = '';
+      if (y < to.y) {
+        dir += 'down';
+      } else if (y > to.y) {
+        dir += 'up';
+      }
 
-      gr.addEdge(i, h1.id, 'half');
-      gr.addEdge(h2.id, to.id, 'half');
+      if (x < to.x) {
+        dir += 'right';
+      }
+      if (x > to.x) {
+        dir += 'left';
+      }
+
+      gr.addEdge(i, h1.id, dir);
+      gr.addEdge(h1.id, to.id, dir);
     }
   }
 

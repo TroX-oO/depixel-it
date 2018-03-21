@@ -208,14 +208,20 @@ class MainPage extends React.Component<{}, StateTypes> {
               initialGraph: g
             }));
           } else if (graphType === 'reshaped' && imageData) {
+            const s = Graph.unserialize(msg.data.graph);
             const g = {
               width: imageData.width,
               height: imageData.height,
-              graph: Graph.unserialize(msg.data.graph)
+              graph: s
+            };
+            const gi = {
+              width: imageData.width,
+              height: imageData.height,
+              graph: s
             };
             this.setState(prevState => ({
               ...prevState,
-              steps: [...prevState.steps, { type: graphType, g: g }],
+              steps: [...prevState.steps, { type: 'initial', g: gi }, { type: graphType, g: g }],
               reshapedGraph: g
             }));
           }

@@ -12,13 +12,14 @@ function findEdge(node: Array<Object>, toId: number) {
 let Id = 0;
 
 export default class Graph {
+  id: number;
   nodes: Array<{
+    id: number,
     edges: Array<Object>,
     rgb: ?Object,
     x: number,
     y: number
   }>;
-  id: number;
 
   constructor(size: number) {
     this.id = ++Id;

@@ -96,14 +96,14 @@ function getPoints(graph, width, height) {
       console.log(`result: ${x} ${y}`);
     }
 
-    if (isNaN(x) || isNaN(y)) {
-      x = nodes[i].x;
-      y = nodes[i].y;
-    }
+    // if (isNaN(x) || isNaN(y)) {
+    //   x = nodes[i].x;
+    //   y = nodes[i].y;
+    // }
 
     result.push({
-      x: Math.max(Math.min(x, width), 0),
-      y: Math.max(Math.min(y, height), 0),
+      x: Math.max(Math.min(x, width), 0) + 0.5,
+      y: Math.max(Math.min(y, height), 0) + 0.5,
       style: rgb ? { fill: `rgba(${rgb.r},${rgb.g},${rgb.b},0.5)` } : null
     });
   }
