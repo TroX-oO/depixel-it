@@ -9,6 +9,15 @@ function findEdge(node: Array<Object>, toId: number) {
   return -1;
 }
 
+function findNodeIdx(nodes: Array<Object>, nodeId: number) {
+  for (let i = 0; i < nodes.length; ++i) {
+    if (nodes[i].id === nodeId) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 function findPath(paths: Array<Object>, x: number, y: number) {
   for (let i = 0; i < paths.length; ++i) {
     if (paths[i].x === x && paths[i].y === y) {
@@ -97,6 +106,20 @@ export default class Graph {
     return n;
   }
 
+  removeNode(nodeId: number) {
+    const idx = findNodeIdx(this.nodes, nodeId);
+
+    if (idx !== -1) {
+      const node = this.nodes[idx];
+
+      while (node.edges.length) {
+        this.removeEdge(nodeId, node.edges[0].nodeId);
+      }
+
+      this.nodes.splice(idx, 1);
+    }
+  }
+
   findNode(x: number, y: number) {
     for (let i = 0; i < this.nodes.length; ++i) {
       if (this.nodes[i].x === x && this.nodes[i].y === y) {
@@ -107,11 +130,23 @@ export default class Graph {
     return null;
   }
 
-  addEdge(fromId: number, toId: number, dir: string, data: any) {
-    if (this.nodes[fromId] && findEdge(this.nodes[fromId].edges, toId) === -1) {
-      this.nodes[fromId].edges.push({ nodeId: toId, dir, data });
+  getNode(nodeId: number) {
+    for (let i = 0; i < this.nodes.length; ++i) {
+      if (this.nodes[i].id === nodeId) {
+        return this.nodes[i];
+      }
     }
-    if (this.nodes[toId] && findEdge(this.nodes[toId].edges, fromId) === -1) {
+    return null;
+  }
+
+  addEdge(fromId: number, toId: number, dir: string, data: any) {
+    const fromNode = this.getNode(fromId);
+    const toNode = this.getNode(toId);
+
+    if (fromNode && findEdge(fromNode.edges, toId) === -1) {
+      fromNode.edges.push({ nodeId: toId, dir, data });
+    }
+    if (toNode && findEdge(toNode.edges, fromId) === -1) {
       const invert = dir => {
         if (dir === 'up') return 'down';
         if (dir === 'down') return 'up';
@@ -122,35 +157,39 @@ export default class Graph {
         if (dir === 'downleft') return 'upright';
         if (dir === 'downright') return 'upleft';
       };
-      this.nodes[toId].edges.push({ nodeId: fromId, dir: invert(dir), data });
+      toNode.edges.push({ nodeId: fromId, dir: invert(dir), data });
     }
   }
 
   removeEdge(fromId: number, toId: number) {
-    if (this.nodes[fromId]) {
-      const idx = findEdge(this.nodes[fromId].edges, toId);
+    const fromNode = this.getNode(fromId);
+    const toNode = this.getNode(toId);
+
+    if (fromNode) {
+      const idx = findEdge(fromNode.edges, toId);
 
       if (idx !== -1) {
-        this.nodes[fromId].edges.splice(idx, 1);
+        fromNode.edges.splice(idx, 1);
       }
     }
 
-    if (this.nodes[toId]) {
-      const idx = findEdge(this.nodes[toId].edges, fromId);
+    if (toNode) {
+      const idx = findEdge(toNode.edges, fromId);
 
       if (idx !== -1) {
-        this.nodes[toId].edges.splice(idx, 1);
+        toNode.edges.splice(idx, 1);
       }
     }
   }
 
   hasEdge(fromId: number, toId: number) {
+    const fromNode = this.getNode(fromId);
     // console.log(`hasEdge from ${fromId} to ${toId} ? ${(findEdge(this.nodes[fromId].edges, toId) !== -1).toString()}`);
-    return findEdge(this.nodes[fromId].edges, toId) !== -1;
+    return findEdge(fromNode.edges, toId) !== -1;
   }
 
   removePath(nodeId: number, x: number, y: number) {
-    const node = this.nodes[nodeId];
+    const node = this.getNode(nodeId);
 
     if (node) {
       const idx = findPath(node.path, x, y);
@@ -162,7 +201,7 @@ export default class Graph {
   }
 
   addPath(nodeId: number, x: number, y: number) {
-    const node = this.nodes[nodeId];
+    const node = this.getNode(nodeId);
 
     if (node) {
       node.path.push({ x, y });

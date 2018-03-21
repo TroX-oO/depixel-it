@@ -82,7 +82,7 @@ class LatticeGraphView extends React.Component<PropTypes, null> {
         ctx.fill();
 
         for (let j = 0; j < edges.length; ++j) {
-          const dest = nodes[edges[j].nodeId];
+          const dest = graph.getNode(edges[j].nodeId);
           ctx.beginPath();
           ctx.moveTo(x * factor + Margin, y * factor + Margin);
           ctx.lineTo(dest.x * factor + Margin, dest.y * factor + Margin);

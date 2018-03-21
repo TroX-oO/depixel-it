@@ -100,6 +100,22 @@ function toYUV(rgb: Object) {
   };
 }
 
+function match(rgb1, rgb2) {
+  return rgb1.r === rgb2.r && rgb1.g === rgb2.g && rgb1.b === rgb2.b;
+
+  // const yuv1 = toYUV(rgb1);
+  // const yuv2 = toYUV(rgb2);
+
+  // if (
+  //   Math.abs(yuv1.y - yuv2.y) > 48 / 255 ||
+  //   Math.abs(yuv1.u - yuv2.u) > 7 / 255 ||
+  //   Math.abs(yuv1.v - yuv2.v) > 6 / 255
+  // ) {
+  //   return true;
+  // }
+  // return false;
+}
+
 function removeDissimilarConnectedPixels(graph) {
   const { nodes } = graph;
 
@@ -350,7 +366,7 @@ function reshape(graph, width, height) {
   gr.makeGrid(width, height);
 
   for (let i = 0; i < nodes.length; ++i) {
-    const { edges, x, y, rgb } = nodes[i];
+    const { edges, x, y, rgb, id } = nodes[i];
 
     // we don't process corners
     if (
@@ -377,47 +393,105 @@ function reshape(graph, width, height) {
       const offsetY = to.y - y;
 
       // Adj node = to.x, y
-      if (!(rgb && to.rgb && rgb.r === to.rgb.r && rgb.g === to.rgb.g && rgb.b === to.rgb.b)) {
-        const pnx = [px_x, px_y - offsetY];
-        const mpn = [px_x, px_y - 0.5 * offsetY];
-        const npn = [px_x + 0.25 * offsetX, px_y - 0.25 * offsetY];
+      let adj_node = graph.findNode(to.x, y);
+
+      let pn = null;
+      let mpn = null;
+      let npn = null;
+      let mpnNode = null;
+      let npnNode = null;
+      let pxNode = null;
+      let pnNode = null;
+
+      if (!match(rgb, adj_node.rgb)) {
+        pn = [px_x, px_y - offsetY];
+        mpn = [px_x, px_y - 0.5 * offsetY];
+        npn = [px_x + 0.25 * offsetX, px_y - 0.25 * offsetY];
+
+        graph.removePath(adj_node.id, px_x, px_y);
+        graph.addPath(adj_node.id, npn[0], npn[1]);
+        graph.addPath(id, npn[0], npn[1]);
+
+        mpnNode = gr.findNode(mpn[0], mpn[1]);
+        npnNode = gr.findNode(npn[0], npn[1]);
+        pxNode = gr.findNode(px_x, px_y);
+
+        if (mpnNode) {
+          gr.removeEdge(mpnNode.id, pxNode.id);
+        } else {
+          pnNode = gr.findNode(pn[0], pn[1]);
+
+          gr.removeEdge(pnNode.id, pxNode.id);
+          mpnNode = gr.addNode(mpn[0], mpn[1]);
+          gr.addEdge(pnNode.id, mpnNode.id);
+        }
+        if (!npnNode) {
+          npnNode = gr.addNode(npn[0], npn[1]);
+        }
+        gr.addEdge(mpnNode.id, npnNode.id);
+        gr.addEdge(npnNode.id, pxNode.id);
       }
 
-      //
-      // const offsetX = Math.abs(to.x - x);
-      // const offsetY = Math.abs(to.y - y);
+      // Adj node = to.x, y
+      adj_node = graph.findNode(x, to.y);
 
-      // const h1 = gr.addNode(xHalf, yHalf);
+      if (!match(rgb, adj_node.rgb)) {
+        pn = [px_x - offsetX, px_y];
+        mpn = [px_x - 0.5 * offsetX, px_y];
+        npn = [px_x - 0.25 * offsetX, px_y + 0.25 * offsetY];
 
-      // let dir = '';
-      // if (y < to.y) {
-      //   dir += 'down';
-      // } else if (y > to.y) {
-      //   dir += 'up';
-      // }
+        graph.removePath(adj_node.id, px_x, px_y);
+        graph.addPath(adj_node.id, npn[0], npn[1]);
+        graph.addPath(id, npn[0], npn[1]);
 
-      // if (x < to.x) {
-      //   dir += 'right';
-      // }
-      // if (x > to.x) {
-      //   dir += 'left';
-      // }
+        mpnNode = gr.findNode(mpn[0], mpn[1]);
+        npnNode = gr.findNode(npn[0], npn[1]);
+        pxNode = gr.findNode(px_x, px_y);
 
-      // const n1 = gr.findNode(x, y);
-      // const n2 = gr.findNode(to.x, to.y);
+        if (mpnNode) {
+          gr.removeEdge(mpnNode.id, pxNode.id);
+        } else {
+          pnNode = gr.findNode(pn[0], pn[1]);
 
-      // gr.addEdge(n1.id, h1.id, dir);
-      // gr.addEdge(h1.id, n2.id, invert(dir));
+          gr.removeEdge(pnNode.id, pxNode.id);
+          mpnNode = gr.addNode(mpn[0], mpn[1]);
+          gr.addEdge(pnNode.id, mpnNode.id);
+        }
+        if (!npnNode) {
+          npnNode = gr.addNode(npn[0], npn[1]);
+        }
+        gr.addEdge(mpnNode.id, npnNode.id);
+        gr.addEdge(npnNode.id, pxNode.id);
+      }
     }
   }
 
   // We optimize the graph by removing 2-valences nodes
-  // for (let i = 0; i < gr.nodes.length; ++i) {
-  //   const { edges, x, y } = gr.nodes[i];
+  const removals = [];
 
-  //   if (edges.length === 2) {
-  //     const midX =
-  //   }
+  for (let i = 0; i < gr.nodes.length; ++i) {
+    const { edges, x, y, id } = gr.nodes[i];
+
+    if (
+      (x === 0 && y === 0) ||
+      (x === 0 && y === height) ||
+      (x === width && y === 0) ||
+      (x === width && y === height)
+    ) {
+      continue;
+    }
+
+    if (edges.length === 2) {
+      gr.addEdge(edges[0].nodeId, edges[1].nodeId);
+    }
+    if (edges.length <= 2) {
+      removals.push(id);
+    }
+  }
+
+  for (let i = 0; i < removals.length; ++i) {
+    gr.removeNode(removals[i]);
+  }
 
   return gr;
 }
