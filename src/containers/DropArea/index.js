@@ -38,7 +38,6 @@ const Area = styled.div`
 const Zone = styled(Dropzone)`
   width: 200px;
   height: 200px;
-  color: white;
   text-transform: uppercase;
   font-weight: bold;
   font-size: 150%;
@@ -47,8 +46,9 @@ const Zone = styled(Dropzone)`
   vertical-align: middle;
   transition: background-color 250ms ease-in-out;
   border-radius: 5px;
-  border: 3px dashed #4a4a4a;
-  background-color: #7fbaf7;
+  border: 3px dashed #999;
+  background-color: #f0f0f0;
+  color: #999;
   padding: 20px;
   margin: 10px auto;
   display: block;
@@ -56,11 +56,12 @@ const Zone = styled(Dropzone)`
   ${props => (props.current ? `background-color: transparent;` : '')};
 
   &.active {
-    background-color: pink;
+    background-color: #c9e1ff;
   }
 
   &.reject {
-    background-color: red;
+    background-color: #ff7979;
+    color: black;
   }
 `;
 
@@ -124,15 +125,14 @@ class DropArea extends React.Component<PropTypes, StateTypes> {
 
     console.log(file);
     reader.onload = (event: any) => {
-      console.log(event);
       var img = new Image();
 
       img.onload = () => {
-        if (img.width > 200 || img.height > 200) {
+        if (img.width > 50 || img.height > 50) {
           this.setState(prevState => ({
             ...prevState,
             loading: false,
-            error: 'Max image size is 200x200px'
+            error: 'Max image size is 50x50px'
           }));
         } else {
           this.setState(prevState => ({

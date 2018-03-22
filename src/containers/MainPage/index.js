@@ -14,6 +14,8 @@ import Worker from 'worker-loader!../../worker/ImageProcessor.js';
 import Graph from '../../lib/Graph';
 import LatticeGraphView from '../../components/LatticeGraphView';
 import StepView from '../StepView';
+import Progressor from '../../helpers/Progressor';
+import Header from '../../components/Header';
 
 /*
 ** Types
@@ -108,6 +110,7 @@ class MainPage extends React.Component<{}, StateTypes> {
   state = {
     imageData: null,
     progress: null,
+    progression: null,
     processedImage: null,
     steps: [],
     initialGraph: null,
@@ -139,6 +142,11 @@ class MainPage extends React.Component<{}, StateTypes> {
       canvas.height = height;
       ctx.drawImage(imageData, 0, 0, width, height);
       const canvasData = ctx.getImageData(0, 0, width, height);
+
+      this.setState(prevState => ({
+        ...prevState,
+        progression: null
+      }));
 
       this.worker.postMessage({
         width,
@@ -215,6 +223,7 @@ class MainPage extends React.Component<{}, StateTypes> {
 
     return (
       <Page>
+        <Header />
         <PreviewDrop>
           <DropArea onImageLoaded={this.onImageLoaded} />
           <button disabled={!imageData} onClick={this.processImage}>
