@@ -19,15 +19,6 @@ function onProgress(percent: number) {
   }
 }
 
-function noise() {
-  return Math.random() * 0.5 + 0.5;
-}
-
-function colorDistance(scale, dest, src) {
-  for (let i = 0; i < 1000000; ++i) {}
-  return scale * dest + (1 - scale) * src;
-}
-
 function createSimilarityGraph(data, width, height) {
   const g = new Graph(width * height, width, height);
 
@@ -37,7 +28,7 @@ function createSimilarityGraph(data, width, height) {
       const rgb = {
         r: data[current * 4],
         g: data[current * 4 + 1],
-        b: data[current * 4 + 1]
+        b: data[current * 4 + 2]
       };
 
       // We set node color
@@ -349,16 +340,7 @@ function removeDiagonals(graph, width, height) {
     }
   }
 }
-const invert = dir => {
-  if (dir === 'up') return 'down';
-  if (dir === 'down') return 'up';
-  if (dir === 'left') return 'right';
-  if (dir === 'right') return 'left';
-  if (dir === 'upright') return 'downleft';
-  if (dir === 'upleft') return 'downright';
-  if (dir === 'downleft') return 'upright';
-  if (dir === 'downright') return 'upleft';
-};
+
 function reshape(graph, width, height) {
   const gr = new Graph((width + 1) * (height + 1), width + 1, height + 1);
   const { nodes } = graph;
@@ -408,9 +390,9 @@ function reshape(graph, width, height) {
         mpn = [px_x, px_y - 0.5 * offsetY];
         npn = [px_x + 0.25 * offsetX, px_y - 0.25 * offsetY];
 
-        graph.removePath(adj_node.id, px_x, px_y);
-        graph.addPath(adj_node.id, npn[0], npn[1]);
-        graph.addPath(id, npn[0], npn[1]);
+        graph.removeCorner(adj_node.id, px_x, px_y);
+        graph.addCorner(adj_node.id, npn[0], npn[1]);
+        graph.addCorner(id, npn[0], npn[1]);
 
         mpnNode = gr.findNode(mpn[0], mpn[1]);
         npnNode = gr.findNode(npn[0], npn[1]);
@@ -440,9 +422,9 @@ function reshape(graph, width, height) {
         mpn = [px_x - 0.5 * offsetX, px_y];
         npn = [px_x - 0.25 * offsetX, px_y + 0.25 * offsetY];
 
-        graph.removePath(adj_node.id, px_x, px_y);
-        graph.addPath(adj_node.id, npn[0], npn[1]);
-        graph.addPath(id, npn[0], npn[1]);
+        graph.removeCorner(adj_node.id, px_x, px_y);
+        graph.addCorner(adj_node.id, npn[0], npn[1]);
+        graph.addCorner(id, npn[0], npn[1]);
 
         mpnNode = gr.findNode(mpn[0], mpn[1]);
         npnNode = gr.findNode(npn[0], npn[1]);
@@ -493,6 +475,17 @@ function reshape(graph, width, height) {
     gr.removeNode(removals[i]);
   }
 
+  // Copying corners
+  for (let i = 0; i < nodes.length; ++i) {
+    const clone = JSON.parse(JSON.stringify(nodes[i].corners));
+
+    for (let j = 0; j < clone.length; ++j) {
+      if (!gr.findNode(clone[j].x, clone[j].y)) {
+        graph.removeCorner(i, clone[j].x, clone[j].y);
+      }
+    }
+  }
+
   return gr;
 }
 
@@ -536,18 +529,13 @@ function processImage(binaryData, width, height) {
       graph: reshapedGraph.serialize()
     }
   });
-
-  for (let i = 0; i < binaryData.length; i += 4) {
-    const r = binaryData[i];
-    const g = binaryData[i + 1];
-    const b = binaryData[i + 2];
-
-    binaryData[i] = colorDistance(noise(), r * 0.393 + g * 0.769 + b * 0.189, r);
-    binaryData[i + 1] = colorDistance(noise(), r * 0.349 + g * 0.686 + b * 0.168, g);
-    binaryData[i + 2] = colorDistance(noise(), r * 0.272 + g * 0.534 + b * 0.131, b);
-
-    // onProgress(Math.floor(i / binaryData.length * 100));
-  }
+  post({
+    type: 'step',
+    data: {
+      type: 'initial',
+      graph: graph.serialize()
+    }
+  });
 }
 
 function handleMessage(e: any) {

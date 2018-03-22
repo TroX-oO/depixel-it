@@ -18,9 +18,9 @@ function findNodeIdx(nodes: Array<Object>, nodeId: number) {
   return -1;
 }
 
-function findPath(paths: Array<Object>, x: number, y: number) {
-  for (let i = 0; i < paths.length; ++i) {
-    if (paths[i].x === x && paths[i].y === y) {
+function findCorner(cornerss: Array<Object>, x: number, y: number) {
+  for (let i = 0; i < cornerss.length; ++i) {
+    if (cornerss[i].x === x && cornerss[i].y === y) {
       return i;
     }
   }
@@ -34,7 +34,7 @@ export default class Graph {
   nodes: Array<{
     id: number,
     edges: Array<Object>,
-    path: Array<Object>,
+    corners: Array<Object>,
     rgb: ?Object,
     x: number,
     y: number
@@ -45,25 +45,24 @@ export default class Graph {
   constructor(size: number, width: number, height: number) {
     this.id = ++Id;
     this.nodes = new Array(size);
-    this.width = height;
+    this.width = width;
     this.height = height;
 
     for (let i = 0; i < this.nodes.length; ++i) {
-      const x = i % (width + 1);
-      const y = Math.floor(i / (width + 1));
-      const path = [{ x, y }];
+      const x = i % width;
+      const y = Math.floor(i / width);
+      this.nodes[i] = { id: i, edges: [], rgb: null, x: -1, y: -1, corners: [{ x, y }] };
 
       if (x < width) {
-        path.push({ x: x + 1, y: y });
+        this.nodes[i].corners.push({ x: x + 1, y: y });
       }
       if (y < height) {
-        path.push({ x: x, y: y + 1 });
+        this.nodes[i].corners.push({ x: x, y: y + 1 });
       }
 
       if (x < width && y < height) {
-        path.push({ x: x + 1, y: y + 1 });
+        this.nodes[i].corners.push({ x: x + 1, y: y + 1 });
       }
-      this.nodes[i] = { id: i, edges: [], rgb: null, x: -1, y: -1, path: path };
     }
   }
 
@@ -77,20 +76,14 @@ export default class Graph {
       nodes[i].x = x;
       nodes[i].y = y;
 
-      nodes[i].path = [{ x, y }];
+      nodes[i].corners = [];
 
       console.log(`${x}${y}`);
       if (x < width) {
         this.addEdge(i, i + 1, 'right');
-        nodes[i].path.push({ x: x + 1, y: y });
       }
       if (y < height) {
-        nodes[i].path.push({ x: x, y: y + 1 });
         this.addEdge(i, i + (width + 1), 'down');
-      }
-
-      if (x < width && y < height) {
-        nodes[i].path.push({ x: x + 1, y: y + 1 });
       }
     }
   }
@@ -99,7 +92,7 @@ export default class Graph {
     let n = this.findNode(x, y);
 
     if (!n) {
-      n = { id: this.nodes.length, edges: [], rgb: null, x, y, path: [] };
+      n = { id: this.nodes.length, edges: [], rgb: null, x, y, corners: [] };
 
       this.nodes.push(n);
     }
@@ -188,34 +181,34 @@ export default class Graph {
     return findEdge(fromNode.edges, toId) !== -1;
   }
 
-  removePath(nodeId: number, x: number, y: number) {
+  removeCorner(nodeId: number, x: number, y: number) {
     const node = this.getNode(nodeId);
 
     if (node) {
-      const idx = findPath(node.path, x, y);
+      const idx = findCorner(node.corners, x, y);
 
       if (idx !== -1) {
-        node.path.splice(idx, 1);
+        node.corners.splice(idx, 1);
       }
     }
   }
 
-  addPath(nodeId: number, x: number, y: number) {
+  addCorner(nodeId: number, x: number, y: number) {
     const node = this.getNode(nodeId);
 
     if (node) {
-      node.path.push({ x, y });
+      node.corners.push({ x, y });
     }
   }
 
   serialize() {
-    for (let i = 0; i < this.nodes.length; ++i) {
-      console.log(`Node ${i}`);
-      for (let j = 0; j < this.nodes[i].edges.length; ++j) {
-        const node = this.nodes[i].edges[j];
-        console.log(`  Edge -> ${node.nodeId} ${node.data ? `(${JSON.stringify(node.data)})` : ''}`);
-      }
-    }
+    // for (let i = 0; i < this.nodes.length; ++i) {
+    //   console.log(`Node ${i}`);
+    //   for (let j = 0; j < this.nodes[i].edges.length; ++j) {
+    //     const node = this.nodes[i].edges[j];
+    //     console.log(`  Edge -> ${node.nodeId} ${node.data ? `(${JSON.stringify(node.data)})` : ''}`);
+    //   }
+    // }
 
     return JSON.stringify({
       nodes: this.nodes,

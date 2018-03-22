@@ -75,10 +75,11 @@ class StepView extends React.Component<PropTypes, StateTypes> {
 
   renderStep(step: any) {
     if (step) {
+      console.error(step.g.id);
       if (step.type === 'initial') {
-        return <GraphView {...step.g} />;
+        return <GraphView graph={step.g} />;
       } else if (step.type === 'reshaped') {
-        return <LatticeGraphView {...step.g} />;
+        return <LatticeGraphView graph={step.g} />;
       }
     } else {
       <div>No step to display</div>;

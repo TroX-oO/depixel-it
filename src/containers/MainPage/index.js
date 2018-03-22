@@ -25,22 +25,10 @@ export type StateTypes = {
   processedImage: any,
   steps: Array<{
     type: string,
-    g: {
-      width: number,
-      height: number,
-      graph: Graph
-    }
+    g: Graph
   }>,
-  initialGraph: ?{
-    width: number,
-    height: number,
-    graph: Graph
-  },
-  reshapedGraph: ?{
-    width: number,
-    height: number,
-    graph: Graph
-  }
+  initialGraph: ?Graph,
+  reshapedGraph: ?Graph
 };
 
 /*
@@ -196,22 +184,16 @@ class MainPage extends React.Component<{}, StateTypes> {
           const graphType = msg.data.type;
 
           if (graphType === 'initial' && imageData) {
-            const g = {
-              width: imageData.width,
-              height: imageData.height,
-              graph: Graph.unserialize(msg.data.graph)
-            };
+            const g = Graph.unserialize(msg.data.graph);
+
             this.setState(prevState => ({
               ...prevState,
               steps: [...prevState.steps, { type: graphType, g: g }],
               initialGraph: g
             }));
           } else if (graphType === 'reshaped' && imageData) {
-            const g = {
-              width: imageData.width,
-              height: imageData.height,
-              graph: Graph.unserialize(msg.data.graph)
-            };
+            const g = Graph.unserialize(msg.data.graph);
+
             this.setState(prevState => ({
               ...prevState,
               steps: [...prevState.steps, { type: graphType, g: g }],
@@ -241,7 +223,7 @@ class MainPage extends React.Component<{}, StateTypes> {
           <Line percent={progress} />
         </PreviewDrop>
         <StepViewWrapper steps={steps} />
-        <LatticeGraphView {...reshapedGraph} />
+        <LatticeGraphView graph={reshapedGraph} />
         <ProcessedArea>
           <Canvas innerRef={e => (this.canvas = e)} />
           {progress !== null ? <Line percent={progress} strokeWidth="4" /> : null}

@@ -12,15 +12,19 @@
     "prettier"
   ],
   "rules": {
-    "prettier/prettier": ["error", {
-      "singleQuote": true,
-      "jsxBracketSameLine": true,
-      "printWidth": 120,
-      "parser": "flow"
-    }],
+    "prettier/prettier": [
+      "error",
+      {
+        "singleQuote": true,
+        "jsxBracketSameLine": true,
+        "printWidth": 120,
+        "parser": "flow"
+      }
+    ],
     "react/prop-types": 0,
     "no-unused-vars": [
-      "error", {
+      "warn",
+      {
         "vars": "all",
         "args": "none",
         "ignoreRestSiblings": false

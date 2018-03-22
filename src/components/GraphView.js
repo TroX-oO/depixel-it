@@ -5,8 +5,7 @@
  */
 
 import React from 'react';
-import { Motion } from 'react-motion';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import Graph from '../lib/Graph';
 
 /*
@@ -14,10 +13,12 @@ import Graph from '../lib/Graph';
  */
 
 type PropTypes = {
-  width: number,
-  height: number,
-  graph: Graph
+  graph: ?Graph
 };
+
+const ContainerWidth = 400;
+const ContainerHeight = 400;
+const Margin = 10;
 
 /*
  ** Styled
@@ -26,218 +27,101 @@ type PropTypes = {
 const Area = styled.div`
   position: relative;
   display: block;
-  text-align: center;
+  text-align: left;
   margin: auto;
   width: 650px;
   height: 650px;
   overflow: scroll;
 `;
 
-const Grid = styled.table`
-  border-collapse: collapse;
-  ${props => {
-    return css`
-      width: ${props.width}px;
-      height: ${props.height}px;
-    `;
-  }};
-  z-index: 0;
-`;
-
-const Row = styled.tr``;
-const Cell = styled.td`
-  border: 1px solid black;
-  ${props => {
-    if (props.rgb) {
-      const { r, g, b } = props.rgb;
-      return css`
-        background-color: rgba(${r}, ${g}, ${b}, 0.5);
-      `;
-    }
-  }};
-`;
-
-const Node = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: inline-block;
-  text-align: center;
-  margin: auto;
-  width: 10px;
-  height: 10px;
-  line-height: 10px;
-  border-radius: 10px;
-  background: black;
-  color: white;
-  ${props => `transform: translate3d(${props.tx}px, ${props.ty}px, 0);`};
-`;
-
-const Edge = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 2px;
-  background-color: black;
-  ${props => {
-    let tx = 0;
-    let ty = 4;
-    let rotate = 0;
-    let w = 35;
-
-    if (props.dir === 'up') {
-      rotate = 90;
-      tx = -12;
-      ty = -14;
-    } else if (props.dir === 'down') {
-      rotate = 90;
-      tx = -12;
-      ty = 20;
-    } else if (props.dir === 'left') {
-      tx -= 30;
-    } else if (props.dir === 'right') {
-      tx += 10;
-    } else if (props.dir === 'upright') {
-      rotate = -45;
-      tx = -5;
-      ty = -11;
-      w = 50;
-    } else if (props.dir === 'upleft') {
-      rotate = 45;
-      tx = -36;
-      ty = -14;
-      w = 50;
-    } else if (props.dir === 'downleft') {
-      rotate = -45;
-      tx = -36;
-      ty = 20;
-      w = 50;
-    } else if (props.dir === 'downright') {
-      rotate = 45;
-      tx = 0;
-      ty = 22;
-      w = 50;
-    }
-    const tr = `translate3d(${tx}px, ${ty}px, 0)`;
-
-    return `
-      transform: ${tr}${rotate ? ` rotateZ(${rotate}deg)` : ''};
-      width: ${w}px;
-    `;
-  }};
-`;
 /*
 ** Component
 */
 
 class GraphView extends React.Component<PropTypes, null> {
-  canvas = null;
+  canvas: any;
+
+  constructor() {
+    super();
+    this.canvas = null;
+  }
 
   shouldComponentUpdate(nextProps: PropTypes) {
     return nextProps.graph && this.props.graph ? nextProps.graph.id !== this.props.graph.id : true;
   }
 
-  renderNodeAndEdges(idx: number, style: Object) {
+  componentDidMount() {
+    this.updateCanvas();
+  }
+
+  componentDidUpdate() {
+    this.updateCanvas();
+  }
+
+  componentWillUnmount() {
+    if (this.canvas) {
+      const ctx = this.canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, ContainerWidth + 2 * Margin, ContainerHeight + 2 * Margin);
+    }
+  }
+
+  updateCanvas() {
     const { graph } = this.props;
-    const n = graph && graph.nodes[idx];
+    const ctx = this.canvas.getContext('2d');
+    console.error('lattice: ' + (graph ? graph.id : 'nulll'));
 
-    if (n) {
-      return (
-        <Node tx={style.translateX} ty={style.translateY}>
-          {n.edges.map(edge => {
-            return <Edge key={`edge-${idx}-${edge.nodeId}`} dir={edge.dir} />;
-          })}
-        </Node>
-      );
-    } else {
-      return null;
-    }
-  }
-
-  renderGraph() {
-    const { graph, width, height } = this.props;
+    ctx.clearRect(0, 0, ContainerWidth + 2 * Margin, ContainerHeight + 2 * Margin);
 
     if (graph) {
+      console.log(graph.id);
       const { nodes } = graph;
-      const jsx = [];
-      let row = null;
+      const factor = 40;
 
       for (let i = 0; i < nodes.length; ++i) {
-        const j = i % height;
-
-        if (j === 0) {
-          if (row) {
-            jsx.push(row);
-          }
-          row = [];
+        const { rgb, x, y } = nodes[i];
+        if (rgb) {
+          ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        } else {
+          ctx.fillStyle = `white`;
         }
-
-        const x = i % width;
-        const y = Math.floor(i / width);
-
-        const style = {
-          translateX: x * 36 + 18 - 5,
-          translateY: y * 36 + 18 - 5
-        };
-
-        const n = (
-          <Motion key={`node-${i}`} style={style}>
-            {this.renderNodeAndEdges.bind(this, i)}
-          </Motion>
-        );
-
-        if (row) {
-          row.push(n);
-        }
+        ctx.fillRect(x * factor + Margin, y * factor + Margin, factor, factor);
       }
-      jsx.push(row);
-      return jsx;
-    }
-
-    return null;
-  }
-
-  renderGrid() {
-    const { graph, width, height } = this.props;
-
-    if (graph) {
-      const { nodes } = graph;
-      const jsx = [];
-      let row = null;
 
       for (let i = 0; i < nodes.length; ++i) {
-        const j = i % width;
-        const node = nodes[i];
+        const { edges, corners, rgb, x, y } = nodes[i];
+        ctx.beginPath();
+        ctx.arc(x * factor + Margin + factor / 2, y * factor + Margin + factor / 2, 5, 0, Math.PI * 2, true);
+        ctx.fillStyle = `black`;
+        ctx.fill();
 
-        if (j === 0) {
-          if (row) {
-            jsx.push(<Row key={`row-${j}-${i}`}>{row}</Row>);
-          }
-          row = [];
+        for (let j = 0; j < edges.length; ++j) {
+          const dest = graph.getNode(edges[j].nodeId);
+          ctx.beginPath();
+          ctx.moveTo(x * factor + Margin + factor / 2, y * factor + Margin + factor / 2);
+          ctx.lineTo(dest.x * factor + Margin + factor / 2, dest.y * factor + Margin + factor / 2);
+          ctx.strokeStyle = 'rgb(150, 50, 50)';
+          ctx.stroke();
         }
-        const n = <Cell key={`node-${i}`} rgb={node.rgb} id={`${'' + i}`} />;
 
-        if (row) {
-          row.push(n);
+        for (let j = 0; j < corners.length; ++j) {
+          ctx.beginPath();
+          ctx.arc(corners[j].x * factor + Margin, corners[j].y * factor + Margin, 4, 0, Math.PI * 2, true);
+          ctx.fillStyle = `green`;
+          ctx.fill();
         }
       }
-      jsx.push(<Row key={`row-${height}`}>{row}</Row>);
-
-      return (
-        <Grid width={width * 36} height={height * 36}>
-          <tbody>{jsx}</tbody>
-        </Grid>
-      );
     }
-
-    return null;
   }
 
   render() {
+    const { graph } = this.props;
+    const width = (graph ? graph.width * 40 : ContainerWidth) + 2 * Margin;
+    const height = (graph ? graph.height * 40 : ContainerHeight) + 2 * Margin;
+
     return (
       <Area>
-        {this.renderGrid()}
-        {this.renderGraph()}
+        <canvas ref={ref => (this.canvas = ref)} width={width} height={height} />
       </Area>
     );
   }
