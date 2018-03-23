@@ -29,6 +29,12 @@ Progressor.progress = (step: number, percent: number) => {
   }
 };
 
+Progressor.done = () => {
+  for (let i = 0; i < steps.length; ++i) {
+    steps[i].progress = 100;
+  }
+};
+
 Progressor.getProgression = () => {
   let p = 0;
   let title = null;
@@ -41,9 +47,12 @@ Progressor.getProgression = () => {
     }
   }
 
+  const total = Math.floor(p / steps.length);
+
   return {
-    title: title || steps[0].title,
-    progress: Math.floor(p / steps.length)
+    title: total === 100 ? '' : title || steps[0].title,
+    percent: total,
+    complete: total === 100
   };
 };
 

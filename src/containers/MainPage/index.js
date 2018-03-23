@@ -10,12 +10,11 @@ import styled from 'styled-components';
 import DropArea from '../DropArea';
 //$FlowFixMe
 import Worker from 'worker-loader!../../worker/ImageProcessor.js';
-// import ProgressArea from '../ProgressArea';
 import Graph from '../../lib/Graph';
-import LatticeGraphView from '../../components/LatticeGraphView';
 import StepView from '../StepView';
-import Progressor from '../../helpers/Progressor';
 import Header from '../../components/Header';
+import Button from '../../components/Button';
+import Dropdown from '../../components/Dropdown';
 
 /*
 ** Types
@@ -24,78 +23,81 @@ import Header from '../../components/Header';
 export type StateTypes = {
   imageData: any,
   progress: ?number,
+  progression: ?{
+    title: string,
+    percent: number,
+    complete: boolean
+  },
   processedImage: any,
   steps: Array<{
     type: string,
-    g: Graph
-  }>,
-  initialGraph: ?Graph,
-  reshapedGraph: ?Graph
+    g?: Graph,
+    image?: any
+  }>
 };
 
 /*
 ** Styled
 */
 
+const StepViewWidth = 815;
+const StepViewHeight = 815;
+
 const Page = styled.div`
   display: block;
   width: 1200px;
   text-align: center;
   margin: auto;
+  font-family: Verdana, Geneva, sans-serif;
 `;
 
-const PreviewDrop = styled.div`
+const Panel = styled.div`
   display: inline-block;
-  width: 400px;
-  height: 400px;
   text-align: center;
-  border: 1px solid gray;
+  border: 1px solid #cecece;
+  border-radius: 4px;
   margin: 10px;
   padding: 10px;
 `;
 
-// const ProgressView = styled(ProgressArea)`
-//   display: inline-block;
-//   width: 700px;
-//   height: 700px;
-//   text-align: center;
-//   border: 1px solid gray;
-//   margin: 10px;
-//   vertical-align: bottom;
-//   padding: 10px;
-// `;
+const DropPanel = Panel.extend`
+  width: 300px;
+  height: 340px;
+`;
+
+const ContentPanel = Panel.extend`
+  width: ${StepViewWidth}px;
+  height: ${StepViewHeight}px;
+  vertical-align: top;
+`;
 
 const StepViewWrapper = styled(StepView)`
-  display: inline-block;
-  width: 700px;
-  height: 700px;
+  display: block;
+  width: ${StepViewWidth}px;
+  height: ${StepViewHeight}px;
   text-align: center;
-  border: 1px solid gray;
-  margin: 10px;
-  vertical-align: bottom;
-  padding: 10px;
 `;
 
-const ProcessedArea = styled.div`
-  display: inline-block;
-  width: 1160px;
-  height: 1160px;
-  text-align: center;
-  border: 1px solid gray;
-  margin: 10px;
-  vertical-align: top;
-  padding: 10px;
-  box-sizing: border-box;
+const ProgressArea = styled.div`
+  width: ${StepViewWidth}px;
+  height: ${StepViewHeight}px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  background-color: #f0f0f0;
 `;
 
-const ProcessedSpriteImage = styled.div`
-  width: 200px;
-  height: 200px;
+const ProgressDescription = styled.p`
+  display: block;
+  color: #3e3e3e;
+  font-style: italic;
+`;
 
-  ${props => `background-image: url(${props.src});`};
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+const SaveDropdown = styled(Dropdown)`
+  float: right;
 `;
 
 const Canvas = styled.canvas`
@@ -119,6 +121,26 @@ class MainPage extends React.Component<{}, StateTypes> {
 
   worker = new Worker();
   canvas = null;
+  dropdownOptions = [
+    {
+      title: 'PNG x4',
+      handler: () => {
+        console.log('save as png x4');
+      }
+    },
+    {
+      title: 'PNG x8',
+      handler: () => {
+        console.log('save as png x8');
+      }
+    },
+    {
+      title: 'SVG',
+      handler: () => {
+        console.log('save as svg');
+      }
+    }
+  ];
 
   onImageLoaded = (image: Object) => {
     this.setState(prevState => ({
@@ -162,51 +184,47 @@ class MainPage extends React.Component<{}, StateTypes> {
     const msg = e.data;
     const { imageData } = this.state;
 
+    console.log('on message');
+    console.log(msg);
     if (msg) {
       switch (msg.type) {
         case 'progress':
           this.setState(prevState => ({
             ...prevState,
-            progress: msg.data
+            progression: msg.data
           }));
           break;
-        case 'done':
-          const canvas = this.canvas;
-
-          if (canvas && imageData) {
-            const ctx = canvas.getContext('2d');
-            console.log(msg.data);
-            console.log(imageData.width, imageData.height);
-            const d = new ImageData(msg.data, imageData.width, imageData.height);
-
-            ctx.putImageData(d, 0, 0);
-
-            this.setState(prevState => ({
-              ...prevState,
-              progress: null,
-              processedImage: canvas.toDataURL()
-            }));
-          }
-          break;
         case 'step':
-          const graphType = msg.data.type;
+          const stepType = msg.data.type;
 
-          if (graphType === 'initial' && imageData) {
+          if (stepType === 'initial' && imageData) {
             const g = Graph.unserialize(msg.data.graph);
 
             this.setState(prevState => ({
               ...prevState,
-              steps: [...prevState.steps, { type: graphType, g: g }],
-              initialGraph: g
+              steps: [...prevState.steps, { type: stepType, g: g }]
             }));
-          } else if (graphType === 'reshaped' && imageData) {
+          } else if (stepType === 'reshaped' && imageData) {
             const g = Graph.unserialize(msg.data.graph);
 
             this.setState(prevState => ({
               ...prevState,
-              steps: [...prevState.steps, { type: graphType, g: g }],
-              reshapedGraph: g
+              steps: [...prevState.steps, { type: stepType, g: g }]
             }));
+          } else if (stepType === 'final' && imageData) {
+            const canvas = this.canvas;
+
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              const d = new ImageData(msg.data.image, imageData.width, imageData.height);
+
+              ctx.putImageData(d, 0, 0);
+
+              this.setState(prevState => ({
+                ...prevState,
+                steps: [...prevState.steps, { type: stepType, image: canvas.toDataURL() }]
+              }));
+            }
           }
           break;
         default:
@@ -218,26 +236,61 @@ class MainPage extends React.Component<{}, StateTypes> {
     this.worker.addEventListener('message', this.onWorkerMessage);
   }
 
+  renderContent() {
+    const { imageData, steps, progression } = this.state;
+
+    console.log(progression);
+    if (imageData) {
+      if (progression) {
+        if (progression.complete) {
+          return (
+            <StepViewWrapper width={StepViewWidth} height={StepViewHeight} steps={progression.complete ? steps : []}>
+              {progression && progression.complete ? (
+                <SaveDropdown items={this.dropdownOptions}>Save-as</SaveDropdown>
+              ) : null}
+            </StepViewWrapper>
+          );
+        } else {
+          return (
+            <ProgressArea>
+              <Line percent={12} height={12} width={StepViewWidth - 50} />
+              <ProgressDescription>{progression.title}</ProgressDescription>
+            </ProgressArea>
+          );
+        }
+      } else {
+        return (
+          <ProgressArea>
+            <ProgressDescription>Press the magic button !</ProgressDescription>
+            <Button blue onClick={this.processImage}>
+              Depixel-it !
+            </Button>
+          </ProgressArea>
+        );
+      }
+    } else {
+      return (
+        <ProgressArea>
+          <ProgressDescription>Please load an image to see the result</ProgressDescription>
+        </ProgressArea>
+      );
+    }
+  }
+
   render() {
-    const { imageData, progress, processedImage, reshapedGraph, steps } = this.state;
+    const { imageData } = this.state;
 
     return (
       <Page>
         <Header />
-        <PreviewDrop>
+        <DropPanel>
           <DropArea onImageLoaded={this.onImageLoaded} />
-          <button disabled={!imageData} onClick={this.processImage}>
-            Process
-          </button>
-          <Line percent={progress} />
-        </PreviewDrop>
-        <StepViewWrapper steps={steps} />
-        <LatticeGraphView graph={reshapedGraph} />
-        <ProcessedArea>
-          <Canvas innerRef={e => (this.canvas = e)} />
-          {progress !== null ? <Line percent={progress} strokeWidth="4" /> : null}
-          {processedImage ? <ProcessedSpriteImage src={processedImage} /> : null}
-        </ProcessedArea>
+          <Button blue disabled={!imageData} onClick={this.processImage}>
+            Depixel-it !
+          </Button>
+        </DropPanel>
+        <ContentPanel>{this.renderContent()}</ContentPanel>
+        <Canvas innerRef={e => (this.canvas = e)} />
       </Page>
     );
   }

@@ -30,7 +30,7 @@ type StateTypes = {
 const Area = styled.div`
   display: block;
   width: 300px;
-  height: 300px;
+  height: 285px;
   text-align: center;
   margin: auto;
 `;
@@ -42,8 +42,6 @@ const Zone = styled(Dropzone)`
   font-weight: bold;
   font-size: 150%;
   text-align: center;
-  display: table-cell;
-  vertical-align: middle;
   transition: background-color 250ms ease-in-out;
   border-radius: 5px;
   border: 3px dashed #999;
@@ -120,6 +118,15 @@ class DropArea extends React.Component<PropTypes, StateTypes> {
     }
   };
 
+  onDropRejected = (e: any) => {
+    this.setState(prevState => ({
+      ...prevState,
+      hover: false,
+      loading: false,
+      error: 'This type of file is not valid.'
+    }));
+  };
+
   loadImage = (file: Object) => {
     const reader = new FileReader();
 
@@ -128,11 +135,11 @@ class DropArea extends React.Component<PropTypes, StateTypes> {
       var img = new Image();
 
       img.onload = () => {
-        if (img.width > 50 || img.height > 50) {
+        if (img.width > 150 || img.height > 150) {
           this.setState(prevState => ({
             ...prevState,
             loading: false,
-            error: 'Max image size is 50x50px'
+            error: 'Max image size is 150x150px'
           }));
         } else {
           this.setState(prevState => ({
@@ -167,7 +174,8 @@ class DropArea extends React.Component<PropTypes, StateTypes> {
           rejectClassName="reject"
           onDragEnter={this.onDragEnter}
           onDragLeave={this.onDragLeave}
-          onDropAccepted={this.onDropAccepted}>
+          onDropAccepted={this.onDropAccepted}
+          onDropRejected={this.onDropRejected}>
           {!hover ? !current ? 'Drop your sprite here' : <SpriteImage src={current} /> : 'Release!'}
         </Zone>
         {error ? <ErrorMsg>{error}</ErrorMsg> : null}

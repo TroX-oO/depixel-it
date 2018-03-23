@@ -1,22 +1,20 @@
 import Graph from '../lib/Graph';
+import Progressor from '../helpers/Progressor';
 
 //@flow
-
-let intervalId = null;
 
 //$FlowFixMe
 const post = postMessage;
 
-function onProgress(percent: number) {
+function onProgress(step?: number, percent?: number) {
+  if ((step || step === 0) && (percent || percent === 0)) {
+    Progressor.progress(step, percent);
+  }
+
   post({
     type: 'progress',
-    data: percent
+    data: Progressor.getProgression()
   });
-
-  if (percent === 100 && intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
 }
 
 function createSimilarityGraph(data, width, height) {
@@ -72,7 +70,7 @@ function createSimilarityGraph(data, width, height) {
         // Up
         g.addEdge(current, current - width, 'up');
       }
-      onProgress(Math.floor(current / (height * width) * 100));
+      onProgress(0, Math.floor(current / (height * width) * 100));
     }
   }
 
@@ -545,11 +543,22 @@ function handleMessage(e: any) {
   console.log('Message received from main script.');
   console.log(e.data);
 
+  Progressor.reset();
+
   processImage(binary, width, height);
   post({
-    type: 'done',
-    data: binary
+    type: 'step',
+    data: {
+      type: 'final',
+      image: binary
+    }
   });
+  Progressor.done();
+  onProgress();
+  // post({
+  //   type: 'done',
+  //   data: binary
+  // });
 }
 
 onmessage = handleMessage;
