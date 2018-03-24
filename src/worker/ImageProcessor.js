@@ -511,13 +511,6 @@ function handleMessage(e: any) {
   Progressor.reset();
 
   processImage(binary, width, height);
-  post({
-    type: 'step',
-    data: {
-      type: 'final',
-      image: binary
-    }
-  });
 
   Progressor.done();
   onProgress();

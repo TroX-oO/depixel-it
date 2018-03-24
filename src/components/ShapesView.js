@@ -108,7 +108,7 @@ class ShapesView extends React.Component<PropTypes, null> {
     const { graph, width, height } = this.props;
 
     if (graph) {
-      return Math.floor(Math.min(width / graph.width, height / graph.height));
+      return Math.floor(Math.min(width / (graph.width + 1), height / (graph.height + 1)));
     } else {
       return 1;
     }

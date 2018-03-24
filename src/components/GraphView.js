@@ -135,10 +135,11 @@ class GraphView extends React.Component<PropTypes, null> {
   }
 
   factor() {
-    const { graph, width, height } = this.props;
+    const { graph, width, height, lattice } = this.props;
 
     if (graph) {
-      return Math.floor(Math.min(width / graph.width, height / graph.height));
+      const extra = lattice ? 0 : 1;
+      return Math.floor(Math.min(width / (graph.width + extra), height / (graph.height + extra)));
     } else {
       return 1;
     }
