@@ -98,19 +98,26 @@ class StepView extends React.Component<PropTypes, StateTypes> {
     current: 0
   };
 
-  componentWillReceiveProps(nextProps: PropTypes) {
-    if (!nextProps.steps.length) {
-      this.setState(prevState => ({
-        ...prevState,
-        current: 0
-      }));
-    } else {
-      this.setState(prevState => ({
-        ...prevState,
-        current: nextProps.steps.length - 1
-      }));
-    }
+  componentDidMount() {
+    this.setState(prevState => ({
+      ...prevState,
+      current: this.props.steps.length - 1
+    }));
   }
+
+  componentWillReceiveProps(nextProps: PropTypes) {
+    this.setState(prevState => ({
+      ...prevState,
+      current: nextProps.steps.length - 1
+    }));
+  }
+
+  goto = (step: number) => () => {
+    this.setState(prevState => ({
+      ...prevState,
+      current: step
+    }));
+  };
 
   stepDecrease = () => {
     this.setState(prevState => ({
@@ -152,12 +159,18 @@ class StepView extends React.Component<PropTypes, StateTypes> {
         </Content>
         {s ? (
           <Controls>
+            <Button blue onClick={this.goto(0)} disabled={!steps[current - 1]}>
+              &lt;&lt;
+            </Button>
             <Button blue onClick={this.stepDecrease} disabled={!steps[current - 1]}>
               &lt;
             </Button>
             <StepIndex>{current + 1}</StepIndex>
             <Button blue onClick={this.stepIncrease} disabled={!steps[current + 1]}>
               &gt;
+            </Button>
+            <Button blue onClick={this.goto(steps.length - 1)} disabled={!steps[current + 1]}>
+              &gt;&gt;
             </Button>
             {children}
           </Controls>

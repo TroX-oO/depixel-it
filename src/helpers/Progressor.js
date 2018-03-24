@@ -6,6 +6,10 @@ let steps = [
     progress: 0
   },
   {
+    title: 'Removing dissimilar connected pixels',
+    progress: 0
+  },
+  {
     title: 'Resolving ambiguous diagonals',
     progress: 0
   },
@@ -14,6 +18,7 @@ let steps = [
     progress: 0
   }
 ];
+let done = false;
 
 const Progressor = {};
 
@@ -21,6 +26,7 @@ Progressor.reset = () => {
   for (let i = 0; i < steps.length; ++i) {
     steps[i].progress = 0;
   }
+  done = false;
 };
 
 Progressor.progress = (step: number, percent: number) => {
@@ -33,6 +39,7 @@ Progressor.done = () => {
   for (let i = 0; i < steps.length; ++i) {
     steps[i].progress = 100;
   }
+  done = true;
 };
 
 Progressor.getProgression = () => {
@@ -52,7 +59,7 @@ Progressor.getProgression = () => {
   return {
     title: total === 100 ? '' : title || steps[0].title,
     percent: total,
-    complete: total === 100
+    complete: done
   };
 };
 

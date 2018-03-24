@@ -51,7 +51,14 @@ export default class Graph {
     for (let i = 0; i < this.nodes.length; ++i) {
       const x = i % width;
       const y = Math.floor(i / width);
-      this.nodes[i] = { id: i, edges: [], rgb: null, x: -1, y: -1, corners: [{ x, y }] };
+      this.nodes[i] = {
+        id: i,
+        edges: [],
+        rgb: null,
+        x: -1,
+        y: -1,
+        corners: [{ x, y }]
+      };
 
       if (x < width) {
         this.nodes[i].corners.push({ x: x + 1, y: y });
@@ -78,7 +85,6 @@ export default class Graph {
 
       nodes[i].corners = [];
 
-      console.log(`${x}${y}`);
       if (x < width) {
         this.addEdge(i, i + 1, 'right');
       }
@@ -177,7 +183,6 @@ export default class Graph {
 
   hasEdge(fromId: number, toId: number) {
     const fromNode = this.getNode(fromId);
-    // console.log(`hasEdge from ${fromId} to ${toId} ? ${(findEdge(this.nodes[fromId].edges, toId) !== -1).toString()}`);
     return findEdge(fromNode.edges, toId) !== -1;
   }
 

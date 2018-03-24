@@ -38,7 +38,7 @@ const DropdownWrapper = styled.div`
 
 const DropdownMenu = styled.div`
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   right: 0;
   z-index: 1;
 `;
@@ -105,7 +105,7 @@ class Dropdown extends React.Component<PropTypes, StateTypes> {
 
     return (
       <DropdownWrapper className={className}>
-        <Button onClick={this.handleClick}>{children} &#x25BC;</Button>
+        <Button onClick={this.handleClick}>{children} &#x25B2;</Button>
         {visible ? this.renderMenu() : null}
       </DropdownWrapper>
     );

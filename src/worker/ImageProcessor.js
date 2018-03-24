@@ -5,16 +5,22 @@ import Progressor from '../helpers/Progressor';
 
 //$FlowFixMe
 const post = postMessage;
+let lastProgress = 0;
 
 function onProgress(step?: number, percent?: number) {
   if ((step || step === 0) && (percent || percent === 0)) {
     Progressor.progress(step, percent);
   }
+  const p = Progressor.getProgression();
 
-  post({
-    type: 'progress',
-    data: Progressor.getProgression()
-  });
+  if (lastProgress !== p.percent) {
+    lastProgress = p.percent;
+
+    post({
+      type: 'progress',
+      data: p
+    });
+  }
 }
 
 function createSimilarityGraph(data, width, height) {
@@ -70,7 +76,7 @@ function createSimilarityGraph(data, width, height) {
         // Up
         g.addEdge(current, current - width, 'up');
       }
-      onProgress(0, Math.floor(current / (height * width) * 100));
+      onProgress(0, Math.floor(current / (height * width - 1) * 100));
     }
   }
 
@@ -91,18 +97,6 @@ function toYUV(rgb: Object) {
 
 function match(rgb1, rgb2) {
   return rgb1.r === rgb2.r && rgb1.g === rgb2.g && rgb1.b === rgb2.b;
-
-  // const yuv1 = toYUV(rgb1);
-  // const yuv2 = toYUV(rgb2);
-
-  // if (
-  //   Math.abs(yuv1.y - yuv2.y) > 48 / 255 ||
-  //   Math.abs(yuv1.u - yuv2.u) > 7 / 255 ||
-  //   Math.abs(yuv1.v - yuv2.v) > 6 / 255
-  // ) {
-  //   return true;
-  // }
-  // return false;
 }
 
 function removeDissimilarConnectedPixels(graph) {
@@ -126,6 +120,7 @@ function removeDissimilarConnectedPixels(graph) {
         --j;
       }
     }
+    onProgress(1, Math.floor(i / (nodes.length - 1) * 100));
   }
 }
 
@@ -264,14 +259,8 @@ function computeWeight(graph, fromId, toId, width, height) {
   let result = 0;
 
   result += computeCurveHeuristic(graph, fromId, toId, width);
-  console.error(`computeCurveHeuristic ${fromId} ${toId}`);
-  console.log(computeCurveHeuristic(graph, fromId, toId, width));
   result += computeSparseHeuristic(graph, fromId, toId, width, height);
-  console.error(`computeSparseHeuristic ${fromId} ${toId}`);
-  console.log(computeSparseHeuristic(graph, fromId, toId, width, height));
   result += computeIslandHeuristic(graph, fromId, toId, width);
-  console.error(`computeIslandHeuristic ${fromId} ${toId}`);
-  console.log(computeIslandHeuristic(graph, fromId, toId, width));
 
   return result;
 }
@@ -336,6 +325,7 @@ function removeDiagonals(graph, width, height) {
         graph.removeEdge(i + 1, i + width);
       }
     }
+    onProgress(2, Math.floor(i / (nodes.length - 1) * 100));
   }
 }
 
@@ -444,6 +434,7 @@ function reshape(graph, width, height) {
         gr.addEdge(npnNode.id, pxNode.id);
       }
     }
+    onProgress(3, Math.floor(i / (nodes.length - 1) * 100));
   }
 
   // We optimize the graph by removing 2-valences nodes
@@ -523,15 +514,15 @@ function processImage(binaryData, width, height) {
   post({
     type: 'step',
     data: {
-      type: 'reshaped',
-      graph: reshapedGraph.serialize()
+      type: 'initial',
+      graph: graph.serialize()
     }
   });
   post({
     type: 'step',
     data: {
-      type: 'initial',
-      graph: graph.serialize()
+      type: 'reshaped',
+      graph: reshapedGraph.serialize()
     }
   });
 }
@@ -543,6 +534,7 @@ function handleMessage(e: any) {
   console.log('Message received from main script.');
   console.log(e.data);
 
+  lastProgress = 0;
   Progressor.reset();
 
   processImage(binary, width, height);
@@ -553,12 +545,9 @@ function handleMessage(e: any) {
       image: binary
     }
   });
+
   Progressor.done();
   onProgress();
-  // post({
-  //   type: 'done',
-  //   data: binary
-  // });
 }
 
 onmessage = handleMessage;

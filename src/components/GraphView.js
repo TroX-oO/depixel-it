@@ -69,27 +69,29 @@ class GraphView extends React.Component<PropTypes, null> {
     }
   }
 
+  drawPixels(ctx: Object, nodes: Array<Object>, factor: number) {
+    for (let i = 0; i < nodes.length; ++i) {
+      const { rgb, x, y } = nodes[i];
+      if (rgb) {
+        ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+      } else {
+        ctx.fillStyle = `white`;
+      }
+      ctx.fillRect(x * factor + Margin, y * factor + Margin, factor, factor);
+    }
+  }
+
   updateCanvas() {
     const { graph, width, height, lattice } = this.props;
     const ctx = this.canvas.getContext('2d');
-    console.error('lattice: ' + (graph ? graph.id : 'nulll'));
 
     ctx.clearRect(0, 0, width + 2 * Margin, height + 2 * Margin);
 
     if (graph) {
-      console.log(graph.id);
       const { nodes } = graph;
       const factor = 40;
 
-      for (let i = 0; i < nodes.length; ++i) {
-        const { rgb, x, y } = nodes[i];
-        if (rgb) {
-          ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-        } else {
-          ctx.fillStyle = `white`;
-        }
-        ctx.fillRect(x * factor + Margin, y * factor + Margin, factor, factor);
-      }
+      this.drawPixels(ctx, nodes, factor);
 
       for (let i = 0; i < nodes.length; ++i) {
         const { edges, corners, rgb, x, y } = nodes[i];

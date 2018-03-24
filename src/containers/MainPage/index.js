@@ -40,8 +40,8 @@ export type StateTypes = {
 ** Styled
 */
 
-const StepViewWidth = 815;
-const StepViewHeight = 815;
+const StepViewWidth = 715;
+const StepViewHeight = 715;
 
 const Page = styled.div`
   display: block;
@@ -61,8 +61,8 @@ const Panel = styled.div`
 `;
 
 const DropPanel = Panel.extend`
-  width: 300px;
-  height: 340px;
+  width: 400px;
+  height: ${StepViewHeight}px;
 `;
 
 const ContentPanel = Panel.extend`
@@ -145,9 +145,7 @@ class MainPage extends React.Component<{}, StateTypes> {
   onImageLoaded = (image: Object) => {
     this.setState(prevState => ({
       ...prevState,
-      imageData: image,
-      steps: [],
-      progress: null
+      imageData: image
     }));
   };
 
@@ -167,6 +165,7 @@ class MainPage extends React.Component<{}, StateTypes> {
 
       this.setState(prevState => ({
         ...prevState,
+        steps: [],
         progression: null
       }));
 
@@ -253,7 +252,7 @@ class MainPage extends React.Component<{}, StateTypes> {
         } else {
           return (
             <ProgressArea>
-              <Line percent={12} height={12} width={StepViewWidth - 50} />
+              <Line percent={progression.percent} height={12} width={StepViewWidth - 50} />
               <ProgressDescription>{progression.title}</ProgressDescription>
             </ProgressArea>
           );
