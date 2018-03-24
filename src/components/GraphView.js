@@ -16,6 +16,7 @@ type PropTypes = {
   width: number,
   height: number,
   lattice?: boolean,
+  cornered?: boolean,
   graph: ?Graph
 };
 
@@ -89,7 +90,7 @@ class GraphView extends React.Component<PropTypes, null> {
 
     if (graph) {
       const { nodes } = graph;
-      const factor = 40;
+      const factor = this.factor();
 
       this.drawPixels(ctx, nodes, factor);
 
@@ -133,10 +134,21 @@ class GraphView extends React.Component<PropTypes, null> {
     }
   }
 
+  factor() {
+    const { graph, width, height } = this.props;
+
+    if (graph) {
+      return Math.floor(Math.min(width / graph.width, height / graph.height));
+    } else {
+      return 1;
+    }
+  }
+
   render() {
     const { graph, width, height } = this.props;
-    const cwidth = (graph ? graph.width * 40 : width) + 2 * Margin;
-    const cheight = (graph ? graph.height * 40 : height) + 2 * Margin;
+    const factor = this.factor();
+    const cwidth = (graph ? graph.width * factor : width) + 2 * Margin;
+    const cheight = (graph ? graph.height * factor : height) + 2 * Margin;
 
     return (
       <Area width={width} height={height}>

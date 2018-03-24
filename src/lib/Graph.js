@@ -1,3 +1,5 @@
+import Shape from './Shape';
+
 //@flow
 
 function findEdge(node: Array<Object>, toId: number) {
@@ -18,9 +20,9 @@ function findNodeIdx(nodes: Array<Object>, nodeId: number) {
   return -1;
 }
 
-function findCorner(cornerss: Array<Object>, x: number, y: number) {
-  for (let i = 0; i < cornerss.length; ++i) {
-    if (cornerss[i].x === x && cornerss[i].y === y) {
+function findCorner(corners: Array<Object>, x: number, y: number) {
+  for (let i = 0; i < corners.length; ++i) {
+    if (corners[i].x === x && corners[i].y === y) {
       return i;
     }
   }
@@ -202,8 +204,49 @@ export default class Graph {
     const node = this.getNode(nodeId);
 
     if (node) {
-      node.corners.push({ x, y });
+      if (findCorner(node.corners, x, y) === -1) {
+        node.corners.push({ x, y });
+      }
     }
+  }
+
+  shapes(): Array<Shape> {
+    const nodes = this.nodes;
+    const shapes = [];
+    const seen = [];
+
+    for (let i = 0; i < nodes.length; ++i) {
+      const node = nodes[i];
+
+      if (seen.indexOf(node.id) !== -1) {
+        continue;
+      }
+
+      const shape = new Shape();
+      const stack = [node.id];
+
+      seen.push(node.id);
+      shape.addPoint(node.x, node.y, node.rgb, node.corners);
+
+      while (stack.length) {
+        const id = stack.pop();
+        const n = nodes[id];
+
+        for (let j = 0; j < n.edges.length; ++j) {
+          const edgeId = n.edges[j].nodeId;
+          const edgeNode = nodes[edgeId];
+
+          if (seen.indexOf(edgeId) === -1) {
+            stack.push(edgeId);
+            seen.push(edgeId);
+            shape.addPoint(edgeNode.x, edgeNode.y, edgeNode.rgb, edgeNode.corners);
+          }
+        }
+      }
+      shapes.push(shape);
+    }
+
+    return shapes;
   }
 
   serialize() {

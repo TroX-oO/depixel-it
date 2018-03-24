@@ -183,8 +183,6 @@ class MainPage extends React.Component<{}, StateTypes> {
     const msg = e.data;
     const { imageData } = this.state;
 
-    console.log('on message');
-    console.log(msg);
     if (msg) {
       switch (msg.type) {
         case 'progress':
@@ -209,6 +207,13 @@ class MainPage extends React.Component<{}, StateTypes> {
             this.setState(prevState => ({
               ...prevState,
               steps: [...prevState.steps, { type: stepType, g: g }]
+            }));
+          } else if (stepType === 'shapes' && imageData) {
+            const g = Graph.unserialize(msg.data.graph);
+
+            this.setState(prevState => ({
+              ...prevState,
+              steps: [...prevState.steps, { type: stepType, g: g, shapes: g.shapes() }]
             }));
           } else if (stepType === 'final' && imageData) {
             const canvas = this.canvas;
@@ -238,7 +243,6 @@ class MainPage extends React.Component<{}, StateTypes> {
   renderContent() {
     const { imageData, steps, progression } = this.state;
 
-    console.log(progression);
     if (imageData) {
       if (progression) {
         if (progression.complete) {

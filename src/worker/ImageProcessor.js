@@ -115,7 +115,6 @@ function removeDissimilarConnectedPixels(graph) {
         Math.abs(yuv1.u - yuv2.u) > 7 / 255 ||
         Math.abs(yuv1.v - yuv2.v) > 6 / 255
       ) {
-        console.log(`removing edges ${i} -> ${edges[j].nodeId}`);
         graph.removeEdge(i, edges[j].nodeId);
         --j;
       }
@@ -154,45 +153,6 @@ function computeCurveHeuristic(graph, fromId, toId, width) {
   }
   return curve.length;
 }
-
-// function neighbours(nodeId, width, height) {
-//   const result = [];
-//   const i = nodeId % width;
-//   const j = Math.floor(nodeId / width);
-
-//   if (i > 0) {
-//     result.push(i - 1);
-
-//     if (j > 0) {
-//       result.push(i - 1 - width);
-//     }
-
-//     if (j < height - 1) {
-//       result.push(i - 1 + width);
-//     }
-//   }
-
-//   if (i < width - 1) {
-//     result.push(i + 1);
-
-//     if (j > 0) {
-//       result.push(i + 1 - width);
-//     }
-
-//     if (j < height - 1) {
-//       result.push(i + 1 + width);
-//     }
-//   }
-
-//   if (j > 0) {
-//     result.push(i - width);
-//   }
-
-//   if (j < height - 1) {
-//     result.push(i + width);
-//   }
-//   return result;
-// }
 
 function getbounds(fromId, toId, width, height) {
   const FrameSize = 8;
@@ -270,13 +230,11 @@ function mostWeightDiagonals(graph, origin, width, height) {
   const wSecond = computeWeight(graph, origin + 1, origin + width, width, height);
 
   if (wFirst > wSecond) {
-    console.error(`winner first`);
     return {
       from: origin + 1,
       to: origin + width
     };
   } else if (wFirst < wSecond) {
-    console.error(`winner second`);
     return {
       from: origin,
       to: origin + width + 1
@@ -518,6 +476,7 @@ function processImage(binaryData, width, height) {
       graph: graph.serialize()
     }
   });
+
   post({
     type: 'step',
     data: {
@@ -525,6 +484,20 @@ function processImage(binaryData, width, height) {
       graph: reshapedGraph.serialize()
     }
   });
+
+  post({
+    type: 'step',
+    data: {
+      type: 'shapes',
+      graph: graph.serialize()
+    }
+  });
+
+  const shapes = graph.shapes();
+
+  for (let i = 0; i < shapes.length; ++i) {
+    shapes[i].dump();
+  }
 }
 
 function handleMessage(e: any) {
