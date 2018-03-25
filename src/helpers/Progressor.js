@@ -16,6 +16,10 @@ let steps = [
   {
     title: 'Computing reshaped graph',
     progress: 0
+  },
+  {
+    title: 'Isolating visible edges',
+    progress: 0
   }
 ];
 let done = false;
@@ -57,7 +61,7 @@ Progressor.getProgression = () => {
   const total = Math.floor(p / steps.length);
 
   return {
-    title: total === 100 ? '' : title || steps[0].title,
+    title: total === 100 ? 'Finalizing...' : title || steps[0].title,
     percent: total,
     complete: done
   };

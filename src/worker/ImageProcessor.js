@@ -13,9 +13,9 @@ function onProgress(step?: number, percent?: number) {
   }
   const p = Progressor.getProgression();
 
-  if (lastProgress !== p.percent) {
-    lastProgress = p.percent;
-
+  if (lastProgress !== (step || 1) * p.percent) {
+    lastProgress = (step || 1) * p.percent;
+    console.log(step, percent);
     post({
       type: 'progress',
       data: p
@@ -432,8 +432,46 @@ function reshape(graph, width, height) {
       }
     }
   }
+  onProgress(3, 100);
 
   return gr;
+}
+
+function getVisibleEdgesGraph(reshape, graph) {
+  const { nodes } = graph;
+
+  for (let i = 0; i < nodes.length; ++i) {
+    const { edges, corners } = nodes[i];
+
+    for (let j = 0; j < edges.length; ++j) {
+      const edgeNode = nodes[edges[j].nodeId];
+
+      const intersection = corners.filter(c => edgeNode.corners.some(c2 => c.x === c2.x && c.y === c2.y));
+
+      if (intersection.length !== 2) {
+        console.error(`with migth have a conflict here ${JSON.stringify(intersection)}`);
+      } else {
+        const n1 = reshape.findNode(intersection[0].x, intersection[0].y);
+        const n2 = reshape.findNode(intersection[1].x, intersection[1].y);
+
+        if (n1 && n2 && reshape.hasEdge(n1.id, n2.id)) {
+          reshape.removeEdge(n1.id, n2.id);
+        }
+      }
+    }
+    onProgress(4, Math.floor(i / (nodes.length - 1) * 100));
+  }
+
+  for (let i = 0; i < reshape.nodes.length; ++i) {
+    const { id, edges, x, y } = reshape.nodes[i];
+
+    if (edges.length === 0 || x === 0 || y === 0 || x === reshape.width - 1 || y === reshape.height - 1) {
+      reshape.removeNode(id);
+      --i;
+    }
+  }
+
+  return reshape;
 }
 
 function processImage(binaryData, width, height) {
@@ -477,11 +515,23 @@ function processImage(binaryData, width, height) {
     }
   });
 
+  const serializedReshape = reshapedGraph.serialize();
   post({
     type: 'step',
     data: {
       type: 'reshaped',
-      graph: reshapedGraph.serialize()
+      graph: serializedReshape
+    }
+  });
+
+  const reshapeCopy = Graph.unserialize(serializedReshape);
+  const outlines = getVisibleEdgesGraph(reshapeCopy, graph);
+
+  post({
+    type: 'step',
+    data: {
+      type: 'reshaped',
+      graph: outlines.serialize()
     }
   });
 
@@ -492,12 +542,6 @@ function processImage(binaryData, width, height) {
       graph: graph.serialize()
     }
   });
-
-  const shapes = graph.shapes();
-
-  for (let i = 0; i < shapes.length; ++i) {
-    shapes[i].dump();
-  }
 }
 
 function handleMessage(e: any) {

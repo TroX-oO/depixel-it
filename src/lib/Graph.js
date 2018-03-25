@@ -185,7 +185,7 @@ export default class Graph {
 
   hasEdge(fromId: number, toId: number) {
     const fromNode = this.getNode(fromId);
-    return findEdge(fromNode.edges, toId) !== -1;
+    return fromNode && findEdge(fromNode.edges, toId) !== -1;
   }
 
   removeCorner(nodeId: number, x: number, y: number) {
