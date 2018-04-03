@@ -40,6 +40,18 @@ const Area = styled.div`
 ** Component
 */
 
+function getRandomColor(x, y) {
+  var letters = '456789ABCDEF0123';
+  var color = '#';
+  color += letters[Math.floor((1000 * (x * x + y * y)) % 16)];
+  color += letters[Math.floor((100 * (x + y * y)) % 16)];
+  color += letters[Math.floor((25 * (x * x + y)) % 16)];
+  color += letters[Math.floor((17 * (x * x * x + y * y)) % 16)];
+  color += letters[Math.floor((276 * (x * x + y * y * y)) % 16)];
+  color += letters[Math.floor((826 * (x * x + y * y)) % 16)];
+  return color;
+}
+
 class GraphView extends React.Component<PropTypes, null> {
   canvas: any;
 
@@ -124,11 +136,21 @@ class GraphView extends React.Component<PropTypes, null> {
           ctx.stroke();
         }
 
+        const color = getRandomColor(x, y);
+
         for (let j = 0; j < corners.length; ++j) {
-          ctx.beginPath();
-          ctx.arc(corners[j].x * factor + Margin, corners[j].y * factor + Margin, 4, 0, Math.PI * 2, true);
-          ctx.fillStyle = `green`;
-          ctx.fill();
+          let posX = corners[j].x * factor + Margin;
+          let posY = corners[j].y * factor + Margin;
+
+          if (x + 0.5 < corners[j].x) {
+            posX -= 0.12 * factor;
+          }
+          if (y + 0.5 < corners[j].y) {
+            posY -= 0.12 * factor;
+          }
+
+          ctx.fillStyle = color;
+          ctx.fillRect(posX, posY, 0.12 * factor, 0.12 * factor);
         }
       }
     }

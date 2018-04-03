@@ -71,21 +71,27 @@ class ShapesView extends React.Component<PropTypes, null> {
       const { rgb, corners } = shape.points[i];
 
       if (rgb) {
+        console.log(`rgb shape: ${JSON.stringify(rgb)}`);
         ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
       } else {
+        console.log(`rgb shape: white`);
         ctx.fillStyle = `white`;
       }
 
       if (corners.length) {
         ctx.beginPath();
         ctx.moveTo(corners[0].x * factor + Margin, corners[0].y * factor + Margin);
+        console.log('drawing shape');
+        console.log(`${JSON.stringify(corners[0])}`);
 
-        for (let j = 0; j < corners.length; ++j) {
+        for (let j = 1; j < corners.length; ++j) {
           const { x, y } = corners[j];
 
+          console.log(`${JSON.stringify(corners[j])}`);
           ctx.lineTo(x * factor + Margin, y * factor + Margin);
         }
         ctx.closePath();
+        console.log('done');
         ctx.fill();
       }
     }

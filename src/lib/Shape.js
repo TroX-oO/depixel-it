@@ -22,7 +22,9 @@ export default class Shape {
     }
   }
 
-  computeConvexHull() {}
+  corners() {
+    return Array.prototype.concat(...this.points.map(n => n.corners));
+  }
 
   dump() {
     console.log(`Shape of ${this.points.length} points.`);

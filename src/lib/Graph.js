@@ -29,6 +29,16 @@ function findCorner(corners: Array<Object>, x: number, y: number) {
   return -1;
 }
 
+function hasCorner(points, x, y): boolean {
+  for (let i = 0; i < points.length; ++i) {
+    if (findCorner(points[i].corners, x, y) !== -1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 let Id = 0;
 
 export default class Graph {
@@ -193,9 +203,13 @@ export default class Graph {
 
     if (node) {
       const idx = findCorner(node.corners, x, y);
+      console.log(`removing corner from (${node.x}, ${node.y})  -> (${x}, ${y})   ${JSON.stringify(node.corners)}`);
 
       if (idx !== -1) {
+        console.log('remove corner ok');
         node.corners.splice(idx, 1);
+      } else {
+        console.log('corner not found');
       }
     }
   }
@@ -204,7 +218,9 @@ export default class Graph {
     const node = this.getNode(nodeId);
 
     if (node) {
+      console.log(`Adding corner to (${node.x}, ${node.y})  -> (${x}, ${y})`);
       if (findCorner(node.corners, x, y) === -1) {
+        console.log('add corner ok');
         node.corners.push({ x, y });
       }
     }
@@ -243,10 +259,41 @@ export default class Graph {
           }
         }
       }
+      console.log(`pushing shape of ${shape.points.length} points`);
       shapes.push(shape);
     }
-
+    console.log(`there is ${shapes.length} shapes`);
+    console.log(`there is ${JSON.stringify(shapes, null, 1)} shapes`);
     return shapes;
+  }
+
+  subgraph(points: Array<Node>) {
+    const sg = new Graph(0, this.width, this.height);
+
+    for (let i = 0; i < this.nodes.length; ++i) {
+      const { x, y } = this.nodes[i];
+
+      if (hasCorner(points, x, y)) {
+        sg.addNode(x, y);
+      }
+    }
+
+    for (let i = 0; i < sg.nodes.length; ++i) {
+      const { id, x, y } = sg.nodes[i];
+      const n = this.findNode(x, y);
+
+      for (let j = 0; j < n.edges.length; ++j) {
+        const e = n.edges[j];
+        const dest = this.getNode(e.nodeId);
+        const sgNode = sg.findNode(dest.x, dest.y);
+
+        if (sgNode) {
+          sg.addEdge(id, sgNode.id, e.dir, e.data);
+        }
+      }
+    }
+
+    return sg;
   }
 
   serialize() {

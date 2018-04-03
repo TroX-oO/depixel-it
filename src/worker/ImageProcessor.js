@@ -15,7 +15,6 @@ function onProgress(step?: number, percent?: number) {
 
   if (lastProgress !== (step || 1) * p.percent) {
     lastProgress = (step || 1) * p.percent;
-    console.log(step, percent);
     post({
       type: 'progress',
       data: p
@@ -96,28 +95,40 @@ function toYUV(rgb: Object) {
 }
 
 function match(rgb1, rgb2) {
-  return rgb1.r === rgb2.r && rgb1.g === rgb2.g && rgb1.b === rgb2.b;
+  return matchYUV(rgb1, rgb2);
+  // return rgb1.r === rgb2.r && rgb1.g === rgb2.g && rgb1.b === rgb2.b;
+}
+
+function matchYUV(rgb1, rgb2) {
+  const yuv1 = toYUV(rgb1);
+  const yuv2 = toYUV(rgb2);
+
+  return !(Math.abs(yuv1.y - yuv2.y) > 48 || Math.abs(yuv1.u - yuv2.u) > 7 || Math.abs(yuv1.v - yuv2.v) > 6);
 }
 
 function removeDissimilarConnectedPixels(graph) {
   const { nodes } = graph;
 
   for (let i = 0; i < nodes.length; ++i) {
-    const edges = nodes[i].edges;
-    const yuv1 = toYUV(nodes[i].rgb);
+    const { edges, rgb } = nodes[i];
+    const yuv1 = toYUV(rgb);
 
     for (let j = 0; j < edges.length; ++j) {
       const dest = nodes[edges[j].nodeId];
       const yuv2 = toYUV(dest.rgb);
 
-      if (
-        Math.abs(yuv1.y - yuv2.y) > 48 / 255 ||
-        Math.abs(yuv1.u - yuv2.u) > 7 / 255 ||
-        Math.abs(yuv1.v - yuv2.v) > 6 / 255
-      ) {
+      // console.log(`comparing pixels (${nodes[i].x},${nodes[i].y}) with (${dest.x},${dest.y})`);
+      // console.log(`rgb: ${JSON.stringify(nodes[i].rgb)}    ||    rgb: ${JSON.stringify(dest.rgb)}`);
+      // console.log(`yuv1: ${JSON.stringify(yuv1)}    ||    yuv2: ${JSON.stringify(yuv2)}`);
+      // console.log(`test 1: Math.abs(yuv1.y - yuv2.y) = ${Math.abs(yuv1.y - yuv2.y)} > ${48 / 255}`);
+      // console.log(`test 2: Math.abs(yuv1.u - yuv2.u) = ${Math.abs(yuv1.u - yuv2.u)} > ${7 / 255}`);
+      // console.log(`test 3: Math.abs(yuv1.v - yuv2.v) = ${Math.abs(yuv1.v - yuv2.v)} > ${6 / 255}`);
+      if (Math.abs(yuv1.y - yuv2.y) > 48 || Math.abs(yuv1.u - yuv2.u) > 7 || Math.abs(yuv1.v - yuv2.v) > 6) {
+        // console.error('disconnected');
         graph.removeEdge(i, edges[j].nodeId);
         --j;
       }
+      // console.log(`======`);
     }
     onProgress(1, Math.floor(i / (nodes.length - 1) * 100));
   }
@@ -160,8 +171,8 @@ function getbounds(fromId, toId, width, height) {
   const y1 = Math.floor(fromId / width);
   const x2 = toId % width;
   const y2 = Math.floor(toId / width);
-  const xMin = -FrameSize / 2 - 1 + Math.min(x1, x2);
-  const yMin = -FrameSize / 2 - 1 + Math.min(y1, y2);
+  const xMin = -FrameSize / 2 + 1 + Math.min(x1, x2);
+  const yMin = -FrameSize / 2 + 1 + Math.min(y1, y2);
 
   return {
     xMin,
@@ -195,6 +206,7 @@ function computeSparseHeuristic(graph, fromId, toId, width, height) {
       if (component.indexOf(neighId) === -1) {
         // If the node is within the 8x8 bounds
         const node = graph.nodes[neighId];
+        console.log(`inbounds ? ${JSON.stringify(bounds)}  ${node.x},${node.y} -> ${inbounds(bounds, node.x, node.y)}`);
         if (inbounds(bounds, node.x, node.y)) {
           // We add it to the stack
           component.push(neighId);
@@ -218,9 +230,16 @@ function computeIslandHeuristic(graph, fromId, toId, width) {
 function computeWeight(graph, fromId, toId, width, height) {
   let result = 0;
 
+  console.log(`conflict in diags ${fromId} -> ${toId}`);
   result += computeCurveHeuristic(graph, fromId, toId, width);
+  console.error(`computeCurveHeuristic`);
+  console.log(`${computeCurveHeuristic(graph, fromId, toId, width)}`);
   result += computeSparseHeuristic(graph, fromId, toId, width, height);
+  console.error(`computeSparseHeuristic`);
+  console.log(`${computeSparseHeuristic(graph, fromId, toId, width, height)}`);
   result += computeIslandHeuristic(graph, fromId, toId, width);
+  console.error(`computeIslandHeuristic`);
+  console.log(`${computeIslandHeuristic(graph, fromId, toId, width)}`);
 
   return result;
 }
@@ -287,6 +306,31 @@ function removeDiagonals(graph, width, height) {
   }
 }
 
+function adjust(graph, gr, adjNodeId, id, px_x, px_y, pn, mpn, npn) {
+  graph.removeCorner(adjNodeId, px_x, px_y);
+  graph.addCorner(adjNodeId, npn[0], npn[1]);
+  graph.addCorner(id, npn[0], npn[1]);
+
+  let mpnNode = gr.findNode(mpn[0], mpn[1]);
+  let npnNode = gr.findNode(npn[0], npn[1]);
+  let pxNode = gr.findNode(px_x, px_y);
+
+  if (mpnNode) {
+    gr.removeEdge(mpnNode.id, pxNode.id);
+  } else {
+    const pnNode = gr.findNode(pn[0], pn[1]);
+
+    gr.removeEdge(pnNode.id, pxNode.id);
+    mpnNode = gr.addNode(mpn[0], mpn[1]);
+    gr.addEdge(pnNode.id, mpnNode.id);
+  }
+  if (!npnNode) {
+    npnNode = gr.addNode(npn[0], npn[1]);
+  }
+  gr.addEdge(mpnNode.id, npnNode.id);
+  gr.addEdge(npnNode.id, pxNode.id);
+}
+
 function reshape(graph, width, height) {
   const gr = new Graph((width + 1) * (height + 1), width + 1, height + 1);
   const { nodes } = graph;
@@ -326,41 +370,16 @@ function reshape(graph, width, height) {
       let pn = null;
       let mpn = null;
       let npn = null;
-      let mpnNode = null;
-      let npnNode = null;
-      let pxNode = null;
-      let pnNode = null;
 
       if (!match(rgb, adj_node.rgb)) {
         pn = [px_x, px_y - offsetY];
         mpn = [px_x, px_y - 0.5 * offsetY];
         npn = [px_x + 0.25 * offsetX, px_y - 0.25 * offsetY];
 
-        graph.removeCorner(adj_node.id, px_x, px_y);
-        graph.addCorner(adj_node.id, npn[0], npn[1]);
-        graph.addCorner(id, npn[0], npn[1]);
-
-        mpnNode = gr.findNode(mpn[0], mpn[1]);
-        npnNode = gr.findNode(npn[0], npn[1]);
-        pxNode = gr.findNode(px_x, px_y);
-
-        if (mpnNode) {
-          gr.removeEdge(mpnNode.id, pxNode.id);
-        } else {
-          pnNode = gr.findNode(pn[0], pn[1]);
-
-          gr.removeEdge(pnNode.id, pxNode.id);
-          mpnNode = gr.addNode(mpn[0], mpn[1]);
-          gr.addEdge(pnNode.id, mpnNode.id);
-        }
-        if (!npnNode) {
-          npnNode = gr.addNode(npn[0], npn[1]);
-        }
-        gr.addEdge(mpnNode.id, npnNode.id);
-        gr.addEdge(npnNode.id, pxNode.id);
+        adjust(graph, gr, adj_node.id, id, px_x, px_y, pn, mpn, npn);
       }
 
-      // Adj node = to.x, y
+      // Adj node = x, to.y
       adj_node = graph.findNode(x, to.y);
 
       if (!match(rgb, adj_node.rgb)) {
@@ -368,28 +387,7 @@ function reshape(graph, width, height) {
         mpn = [px_x - 0.5 * offsetX, px_y];
         npn = [px_x - 0.25 * offsetX, px_y + 0.25 * offsetY];
 
-        graph.removeCorner(adj_node.id, px_x, px_y);
-        graph.addCorner(adj_node.id, npn[0], npn[1]);
-        graph.addCorner(id, npn[0], npn[1]);
-
-        mpnNode = gr.findNode(mpn[0], mpn[1]);
-        npnNode = gr.findNode(npn[0], npn[1]);
-        pxNode = gr.findNode(px_x, px_y);
-
-        if (mpnNode) {
-          gr.removeEdge(mpnNode.id, pxNode.id);
-        } else {
-          pnNode = gr.findNode(pn[0], pn[1]);
-
-          gr.removeEdge(pnNode.id, pxNode.id);
-          mpnNode = gr.addNode(mpn[0], mpn[1]);
-          gr.addEdge(pnNode.id, mpnNode.id);
-        }
-        if (!npnNode) {
-          npnNode = gr.addNode(npn[0], npn[1]);
-        }
-        gr.addEdge(mpnNode.id, npnNode.id);
-        gr.addEdge(npnNode.id, pxNode.id);
+        adjust(graph, gr, adj_node.id, id, px_x, px_y, pn, mpn, npn);
       }
     }
     onProgress(3, Math.floor(i / (nodes.length - 1) * 100));
@@ -449,8 +447,11 @@ function getVisibleEdgesGraph(reshape, graph) {
       const intersection = corners.filter(c => edgeNode.corners.some(c2 => c.x === c2.x && c.y === c2.y));
 
       if (intersection.length !== 2) {
-        console.error(`with migth have a conflict here ${JSON.stringify(intersection)}`);
+        console.error(`we migth have a conflict here ${JSON.stringify(intersection)}`);
+        console.log(`(${nodes[i].x},${nodes[i].y}) ${JSON.stringify(corners)}`);
+        console.log(`(${edgeNode.x},${edgeNode.y}) ${JSON.stringify(edgeNode.corners)}`);
       } else {
+        console.log(intersection.length);
         const n1 = reshape.findNode(intersection[0].x, intersection[0].y);
         const n2 = reshape.findNode(intersection[1].x, intersection[1].y);
 
@@ -463,15 +464,30 @@ function getVisibleEdgesGraph(reshape, graph) {
   }
 
   for (let i = 0; i < reshape.nodes.length; ++i) {
-    const { id, edges, x, y } = reshape.nodes[i];
+    const { id, edges } = reshape.nodes[i];
 
-    if (edges.length === 0 || x === 0 || y === 0 || x === reshape.width - 1 || y === reshape.height - 1) {
+    if (edges.length === 0) {
       reshape.removeNode(id);
       --i;
     }
   }
 
   return reshape;
+}
+
+function createShapePath(shapes, outlines) {
+  for (let i = 0; i < shapes.length; ++i) {
+    const shape = shapes[i];
+    const sg = outlines.subgraph(shape.points);
+
+    post({
+      type: 'step',
+      data: {
+        type: 'reshaped',
+        graph: sg.serialize()
+      }
+    });
+  }
 }
 
 function processImage(binaryData, width, height) {
@@ -542,6 +558,26 @@ function processImage(binaryData, width, height) {
       graph: graph.serialize()
     }
   });
+
+  const shapes = graph.shapes();
+
+  createShapePath(shapes, outlines);
+
+  // post({
+  //   type: 'step',
+  //   data: {
+  //     type: 'svg',
+  //     graph: outlines.serialize()
+  //   }
+  // });
+
+  // post({
+  //   type: 'step',
+  //   data: {
+  //     type: 'shapes',
+  //     graph: outlines.serialize()
+  //   }
+  // });
 }
 
 function handleMessage(e: any) {
