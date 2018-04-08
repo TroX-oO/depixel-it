@@ -206,7 +206,7 @@ function computeSparseHeuristic(graph, fromId, toId, width, height) {
       if (component.indexOf(neighId) === -1) {
         // If the node is within the 8x8 bounds
         const node = graph.nodes[neighId];
-        console.log(`inbounds ? ${JSON.stringify(bounds)}  ${node.x},${node.y} -> ${inbounds(bounds, node.x, node.y)}`);
+
         if (inbounds(bounds, node.x, node.y)) {
           // We add it to the stack
           component.push(neighId);
@@ -230,16 +230,9 @@ function computeIslandHeuristic(graph, fromId, toId, width) {
 function computeWeight(graph, fromId, toId, width, height) {
   let result = 0;
 
-  console.log(`conflict in diags ${fromId} -> ${toId}`);
   result += computeCurveHeuristic(graph, fromId, toId, width);
-  console.error(`computeCurveHeuristic`);
-  console.log(`${computeCurveHeuristic(graph, fromId, toId, width)}`);
   result += computeSparseHeuristic(graph, fromId, toId, width, height);
-  console.error(`computeSparseHeuristic`);
-  console.log(`${computeSparseHeuristic(graph, fromId, toId, width, height)}`);
   result += computeIslandHeuristic(graph, fromId, toId, width);
-  console.error(`computeIslandHeuristic`);
-  console.log(`${computeIslandHeuristic(graph, fromId, toId, width)}`);
 
   return result;
 }
@@ -451,7 +444,6 @@ function getVisibleEdgesGraph(reshape, graph) {
         console.log(`(${nodes[i].x},${nodes[i].y}) ${JSON.stringify(corners)}`);
         console.log(`(${edgeNode.x},${edgeNode.y}) ${JSON.stringify(edgeNode.corners)}`);
       } else {
-        console.log(intersection.length);
         const n1 = reshape.findNode(intersection[0].x, intersection[0].y);
         const n2 = reshape.findNode(intersection[1].x, intersection[1].y);
 
@@ -476,18 +468,20 @@ function getVisibleEdgesGraph(reshape, graph) {
 }
 
 function createShapePath(shapes, outlines) {
-  for (let i = 0; i < shapes.length; ++i) {
-    const shape = shapes[i];
-    const sg = outlines.subgraph(shape.points);
+  // for (let i = 0; i < shapes.length; ++i) {
+  //   const shape = shapes[i];
+  //   const sg = outlines.subgraph(shape.points);
 
-    post({
-      type: 'step',
-      data: {
-        type: 'reshaped',
-        graph: sg.serialize()
-      }
-    });
-  }
+  //   post({
+  //     type: 'step',
+  //     data: {
+  //       type: 'reshaped',
+  //       graph: sg.serialize()
+  //     }
+  //   });
+  // }
+  const paths = {};
+  const { nodes } = outlines;
 }
 
 function processImage(binaryData, width, height) {
