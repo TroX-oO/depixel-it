@@ -6,7 +6,8 @@
 
 import React from 'react';
 import styled from 'styled-components';
-import Graph from '../lib/Graph';
+import Path from '../lib/Path';
+import { pathToSvg } from '../helpers/SvgWriter';
 
 /*
  ** Types
@@ -15,7 +16,7 @@ import Graph from '../lib/Graph';
 type PropTypes = {
   width: number,
   height: number,
-  graph: Graph
+  paths: Array<Path>
 };
 
 const Margin = 10;
@@ -44,29 +45,38 @@ class SvgView extends React.Component<PropTypes, null> {
   }
 
   factor() {
-    const { graph, width, height } = this.props;
+    const { paths, width, height } = this.props;
+    let maxWidth = 1;
+    let maxHeight = 1;
 
-    if (graph) {
-      return Math.floor(Math.min(width / (graph.width + 1), height / (graph.height + 1)));
-    } else {
-      return 1;
+    for (let i = 0; i < paths.length; ++i) {
+      const cp = paths[i];
+
+      for (let j = 0; j < cp.length; ++j) {
+        if (cp[j][0] > maxWidth) {
+          maxWidth = cp[j][0];
+        }
+        if (cp[j][1] > maxHeight) {
+          maxHeight = cp[j][1];
+        }
+      }
     }
+
+    return Math.floor(Math.min(width / (maxWidth + 1), height / (maxHeight + 1)));
   }
 
   renderSvg() {
-    const { graph, width, height } = this.props;
+    const { paths, width, height } = this.props;
     const factor = this.factor();
+    return pathToSvg(paths, width, height, factor);
   }
 
   render() {
-    const { graph, width, height } = this.props;
-    const factor = this.factor();
-    const cwidth = (graph ? graph.width * factor : width) + 2 * Margin;
-    const cheight = (graph ? graph.height * factor : height) + 2 * Margin;
+    const { width, height } = this.props;
 
     return (
       <Container width={width} height={height}>
-        {this.renderSvg()};
+        {this.renderSvg()}
       </Container>
     );
   }

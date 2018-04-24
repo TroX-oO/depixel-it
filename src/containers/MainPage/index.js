@@ -15,6 +15,7 @@ import StepView from '../StepView';
 import Header from '../../components/Header';
 import Button from '../../components/Button';
 import Dropdown from '../../components/Dropdown';
+import { saveToSvg, saveToPng } from '../../helpers/SvgWriter';
 
 /*
 ** Types
@@ -104,6 +105,13 @@ const Canvas = styled.canvas`
   display: none;
 `;
 
+function findSvgElement(elem) {
+  if (elem) {
+    return elem.querySelector('svg');
+  }
+  return null;
+}
+
 /*
 ** Component
 */
@@ -119,6 +127,7 @@ class MainPage extends React.Component<{}, StateTypes> {
     reshapedGraph: null
   };
 
+  stepElem = null;
   worker = new Worker();
   canvas = null;
   dropdownOptions = [
@@ -126,18 +135,33 @@ class MainPage extends React.Component<{}, StateTypes> {
       title: 'PNG x4',
       handler: () => {
         console.log('save as png x4');
+        const svg = findSvgElement(document.body);
+
+        if (svg) {
+          saveToPng(svg, 'test.png', 4);
+        }
       }
     },
     {
       title: 'PNG x8',
       handler: () => {
         console.log('save as png x8');
+        const svg = findSvgElement(document.body);
+
+        if (svg) {
+          saveToPng(svg, 'test.png', 8);
+        }
       }
     },
     {
       title: 'SVG',
       handler: () => {
         console.log('save as svg');
+        const svg = findSvgElement(document.body);
+
+        if (svg) {
+          saveToSvg(svg, 'test.svg');
+        }
       }
     }
   ];
@@ -214,6 +238,11 @@ class MainPage extends React.Component<{}, StateTypes> {
             this.setState(prevState => ({
               ...prevState,
               steps: [...prevState.steps, { type: stepType, g: g, shapes: g.shapes() }]
+            }));
+          } else if (stepType === 'paths' && imageData) {
+            this.setState(prevState => ({
+              ...prevState,
+              steps: [...prevState.steps, { type: stepType, paths: msg.data.paths }]
             }));
           } else if (stepType === 'final' && imageData) {
             const canvas = this.canvas;

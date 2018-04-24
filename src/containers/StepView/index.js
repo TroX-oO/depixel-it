@@ -10,6 +10,7 @@ import Graph from '../../lib/Graph';
 import GraphView from '../../components/GraphView';
 import Button from '../../components/Button';
 import ShapesView from '../../components/ShapesView';
+import SvgView from '../../components/SvgView';
 
 /*
 ** Types
@@ -142,6 +143,8 @@ class StepView extends React.Component<PropTypes, StateTypes> {
         return <GraphView width={width} height={height - ControlsHeight} graph={step.g} lattice />;
       } else if (step.type === 'shapes') {
         return <ShapesView width={width} height={height - ControlsHeight} graph={step.g} shapes={step.shapes} />;
+      } else if (step.type === 'paths') {
+        return <SvgView width={width} height={height - ControlsHeight} paths={step.paths} />;
       } else if (step.type === 'final') {
         return <FinalImage width={width} height={height - ControlsHeight} src={step.image} />;
       }

@@ -1,7 +1,8 @@
+//@flow
+
 import Graph from '../lib/Graph';
 import Progressor from '../helpers/Progressor';
-
-//@flow
+import Path from '../lib/Path';
 
 //$FlowFixMe
 const post = postMessage;
@@ -467,21 +468,99 @@ function getVisibleEdgesGraph(reshape, graph) {
   return reshape;
 }
 
-function createShapePath(shapes, outlines) {
-  // for (let i = 0; i < shapes.length; ++i) {
-  //   const shape = shapes[i];
-  //   const sg = outlines.subgraph(shape.points);
+function startPath(outlines, visited, startId) {
+  const path = new Path();
+  let end = startId;
+  let current = startId;
 
-  //   post({
-  //     type: 'step',
-  //     data: {
-  //       type: 'reshaped',
-  //       graph: sg.serialize()
-  //     }
-  //   });
-  // }
-  const paths = {};
+  console.error(`starting path at ${startId}`);
+  do {
+    const node = outlines.getNode(current);
+    const { edges, x, y } = node;
+    console.log(`current node ${current} is (${x}, ${y})   appending to path (edges.length: ${edges.length})`);
+    let edgeNode = null;
+
+    path.append(x, y);
+    for (let i = 0; i < edges.length; ++i) {
+      const { nodeId } = edges[i];
+      console.log(`processing edge ${nodeId}`);
+
+      // If we already treat this edge, we skip it
+      if (visited[`${current}-${nodeId}`] || visited[`${nodeId}-${current}`]) {
+        console.log(`  -> already processed... skipping`);
+        continue;
+      }
+
+      edgeNode = nodeId;
+      break;
+    }
+
+    if (edgeNode !== null) {
+      visited[`${current}-${edgeNode}`] = true;
+      const next = outlines.getNode(edgeNode);
+      console.log(`going to edge (${next.x}, ${next.y})   (edges length: ${next.edges.length}`);
+
+      if (next.edges.length > 2) {
+        console.log(`len > 2  ending path here`);
+        path.append(next.x, next.y);
+        end = edgeNode;
+        break;
+      } else if (next.edges.length === 1) {
+        console.log(`len == 1  ending path here`);
+        path.append(next.x, next.y);
+        end = null;
+        break;
+      } else {
+        console.log(`len === 2, we move to this edge`);
+        current = edgeNode;
+      }
+    } else {
+      return null;
+    }
+  } while (current !== startId);
+
+  if (current === startId) {
+    const node = outlines.getNode(current);
+    const { x, y, edges } = node;
+    if (edges.length === 2) {
+      path.append(x, y);
+    }
+  }
+
+  console.error(`returning path`);
+  path.dump();
+  return {
+    path,
+    end
+  };
+}
+
+function createShapePath(outlines) {
+  const paths = [];
   const { nodes } = outlines;
+  const visited = {};
+  let n = 0;
+  let i = 0;
+  let result = null;
+
+  console.error('go !');
+
+  while (i < nodes.length) {
+    while ((result = startPath(outlines, visited, nodes[n].id))) {
+      post({
+        type: 'step',
+        data: {
+          type: 'paths',
+          paths: [result.path.cp]
+        }
+      });
+      paths.push(result.path);
+    }
+
+    n = ++i;
+  }
+
+  return paths;
 }
 
 function processImage(binaryData, width, height) {
@@ -553,9 +632,7 @@ function processImage(binaryData, width, height) {
     }
   });
 
-  const shapes = graph.shapes();
-
-  createShapePath(shapes, outlines);
+  const paths = createShapePath(outlines);
 
   // post({
   //   type: 'step',
@@ -572,6 +649,14 @@ function processImage(binaryData, width, height) {
   //     graph: outlines.serialize()
   //   }
   // });
+
+  post({
+    type: 'step',
+    data: {
+      type: 'paths',
+      paths: paths.map(p => p.cp)
+    }
+  });
 }
 
 function handleMessage(e: any) {
